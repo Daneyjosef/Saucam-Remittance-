@@ -102,6 +102,7 @@ interface AdminPortalProps { onLogout: () => void }
 export default function AdminPortal({ onLogout }: AdminPortalProps) {
   const [section, setSection] = useState<Section>('overview');
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [users, setUsers] = useState<User[]>(initUsers);
   const [rates, setRates] = useState<ExchangeRate[]>(initRates);
   const [branches, setBranches] = useState<Branch[]>(initBranches);
@@ -136,9 +137,61 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
     <div className="flex h-screen overflow-hidden" style={{ background: '#f0f2f8' }}>
       <Toaster position="top-right" richColors />
 
-      {/* Sidebar */}
+      {/* Mobile nav overlay */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 flex md:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative flex flex-col w-64 h-full overflow-hidden"
+            style={{ background: 'linear-gradient(180deg,#1e1b4b 0%,#312e81 60%,#4c1d95 100%)', zIndex: 50 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Mobile nav logo */}
+            <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                <Shield style={{ color: 'white', fontSize: 20 }} />
+              </div>
+              <div>
+                <div className="text-white font-extrabold text-base leading-none">Saucam Pro</div>
+                <div className="text-white/55 text-[10px] uppercase tracking-widest mt-0.5">Admin Portal</div>
+              </div>
+            </div>
+            {/* Mobile nav items */}
+            <div className="flex-1 py-3 overflow-y-auto">
+              {navItems.map((item) => {
+                const active = section === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => { setSection(item.id); setMobileNavOpen(false); }}
+                    className="flex items-center mx-2 mb-1 rounded-lg cursor-pointer transition-all duration-150 relative"
+                    style={{ gap: 10, padding: '10px 14px', background: active ? 'rgba(255,255,255,0.18)' : 'transparent', borderLeft: active ? '3px solid #a78bfa' : '3px solid transparent' }}
+                  >
+                    <span style={{ color: active ? '#c4b5fd' : 'rgba(255,255,255,0.65)', display: 'flex', flexShrink: 0 }}>{item.icon}</span>
+                    <span className="flex-1 text-sm" style={{ color: active ? 'white' : 'rgba(255,255,255,0.75)', fontWeight: active ? 700 : 500 }}>{item.label}</span>
+                    {item.badge && item.badge > 0 && (
+                      <span className="flex items-center justify-center text-white rounded-full text-[10px] font-bold" style={{ background: '#ef4444', minWidth: 18, height: 18, padding: '0 4px' }}>{item.badge}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="p-3 border-t border-white/10">
+              <div onClick={onLogout} className="flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-red-500/20" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <Logout style={{ fontSize: 20 }} />
+                <span className="text-sm font-medium">Sign Out</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Sidebar */}
       <div
-        className="flex flex-col overflow-hidden flex-shrink-0"
+        className="hidden md:flex flex-col overflow-hidden flex-shrink-0"
         style={{
           width: collapsed ? 68 : 240,
           transition: 'width 0.25s ease',
@@ -223,12 +276,23 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
-        <div className="bg-white px-6 py-3 flex items-center justify-between flex-shrink-0 border-b border-[var(--color-border)]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
-          <div>
-            <div className="font-extrabold text-[#1e1b4b] text-xl leading-none">{navItems.find((n) => n.id === section)?.label}</div>
-            <div className="text-xs text-[var(--color-text-3)] mt-0.5">{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        <div className="bg-white px-3 md:px-6 py-3 flex items-center justify-between flex-shrink-0 border-b border-[var(--color-border)]" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Mobile hamburger */}
+            <IconButton
+              size="small"
+              className="flex md:hidden"
+              onClick={() => setMobileNavOpen(true)}
+              style={{ color: '#1e1b4b', flexShrink: 0 }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </IconButton>
+            <div className="min-w-0">
+              <div className="font-extrabold text-[#1e1b4b] text-base md:text-xl leading-none truncate">{navItems.find((n) => n.id === section)?.label}</div>
+              <div className="text-xs text-[var(--color-text-3)] mt-0.5 hidden sm:block">{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
             <div className="relative" onClick={() => setSection('users')} style={{ cursor: 'pointer' }}>
               <IconButton size="small"><Notifications style={{ fontSize: 18, color: pendingResets > 0 ? 'var(--color-admin)' : 'var(--color-text-3)' }} /></IconButton>
               {pendingResets > 0 && (
@@ -237,7 +301,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
             </div>
             <div className="flex items-center gap-2">
               <Avatar style={{ width: 34, height: 34, background: '#312e81', fontSize: 13, fontWeight: 700 }}>SA</Avatar>
-              <div>
+              <div className="hidden sm:block">
                 <div className="text-sm font-bold leading-none text-[#1e1b4b]">System Admin</div>
                 <div className="text-xs font-semibold text-[var(--color-admin)]">Administrator</div>
               </div>
@@ -246,7 +310,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-3 md:p-6">
           {section === 'overview'   && <OverviewSection users={users} transactions={transactions} branches={branches} onNavigate={setSection} />}
           {section === 'users'      && <UsersSection users={users} setUsers={setUsers} resetRequests={resetRequests} setResetRequests={setResetRequests} />}
           {section === 'branches'   && <BranchesSection branches={branches} setBranches={setBranches} />}
@@ -274,7 +338,7 @@ function OverviewSection({ users, transactions, branches, onNavigate }: { users:
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-5">
           <div className="font-bold text-[#1e1b4b] mb-4">Revenue by Branch (Today)</div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={180} className="md:!h-[220px]">
             <BarChart data={branchRevenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="branch" tick={{ fill: '#64748b', fontSize: 11 }} />
@@ -286,7 +350,7 @@ function OverviewSection({ users, transactions, branches, onNavigate }: { users:
         </div>
         <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-5">
           <div className="font-bold text-[#1e1b4b] mb-4">Transaction Volume (Last 7 Days)</div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={180} className="md:!h-[220px]">
             <LineChart data={volumeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
@@ -396,7 +460,7 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
         <AppStatCard label="Tellers"         value={users.filter((u) => u.role === 'Teller').length}           color="primary" delay={0.18} />
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 780 }}>
             <TableHead>
               <TableRow>
@@ -637,13 +701,13 @@ function RatesSection({ rates, setRates }: { rates: ExchangeRate[]; setRates: Re
           <AppButton variant="accent" leftIcon={<CloudUpload style={{ fontSize: 18 }} />} onClick={() => toast.success('Rates pushed to all branches')}>Push to Branches</AppButton>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         <AppStatCard label="Total Pairs" value={rates.length} color="admin" delay={0} />
         <AppStatCard label="Active" value={rates.filter((r) => r.status === 'Active').length} color="accent" delay={0.06} />
         <AppStatCard label="Avg Spread" value={`${(rates.reduce((s, r) => s + r.spread, 0) / rates.length).toFixed(2)}%`} color="warning" delay={0.12} />
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 700 }}>
             <TableHead>
               <TableRow>
@@ -766,9 +830,9 @@ function FloatSection({ floats, setFloats }: { floats: CurrencyFloat[]; setFloat
           );
         })}
       </div>
-      <div className="flex items-center justify-between flex-wrap gap-4 p-5 rounded-[var(--radius-lg)] text-white" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 md:p-5 rounded-[var(--radius-lg)] text-white" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
         <div>
-          <div className="font-bold text-lg">Submit End of Day Reconciliation</div>
+          <div className="font-bold text-base md:text-lg">Submit End of Day Reconciliation</div>
           <div className="text-white/80 text-sm mt-0.5">Ensure all physical counts are entered before submitting</div>
         </div>
         <AppButton variant="accent" size="lg" leftIcon={<Calculate style={{ fontSize: 20 }} />} onClick={() => { if (floats.every((f) => f.physicalCount)) toast.success('Reconciliation submitted'); else toast.error('Enter all physical counts first'); }}>
@@ -796,8 +860,8 @@ function ComplianceSection({ transactions, setTransactions }: { transactions: Fl
         <AppStatCard label="Approved"            value={transactions.filter((t) => t.status === 'Approved').length}            color="accent"  delay={0.12} />
         <AppStatCard label="Total Flagged"       value={transactions.length}                                                   color="admin"   delay={0.18} />
       </div>
-      <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 mb-4 flex gap-3 items-center flex-wrap">
-        <FormControl size="small" style={{ minWidth: 200 }}>
+      <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-3 md:p-4 mb-4 flex gap-3 items-center flex-wrap">
+        <FormControl size="small" style={{ minWidth: 160 }}>
           <InputLabel>Branch Filter</InputLabel>
           <Select value={branch} label="Branch Filter" onChange={(e) => setBranch(e.target.value)}>
             {branchNames.map((b) => <MenuItem key={b} value={b}>{b}</MenuItem>)}
@@ -808,7 +872,7 @@ function ComplianceSection({ transactions, setTransactions }: { transactions: Fl
         <AppButton variant="accent" size="sm" leftIcon={<FileDownload style={{ fontSize: 16 }} />} onClick={() => toast.success('Generating compliance report...')}>Export Report</AppButton>
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 1000 }}>
             <TableHead>
               <TableRow>

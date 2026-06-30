@@ -146,7 +146,7 @@ export default function CashFloatDashboard({ onBack, onLogout }: CashFloatDashbo
                       />
                     </div>
                     <div
-                      className="min-w-[130px] p-3 rounded-[var(--radius-sm)] border text-center"
+                      className="min-w-[100px] p-3 rounded-[var(--radius-sm)] border text-center"
                       style={{ background: 'var(--color-surface-subtle)', borderColor: 'var(--color-border)' }}
                     >
                       <div className="text-xs" style={{ color: 'var(--color-text-3)' }}>Difference</div>
@@ -173,7 +173,7 @@ export default function CashFloatDashboard({ onBack, onLogout }: CashFloatDashbo
 
           {/* Submit reconciliation */}
           <div
-            className="mt-8 flex items-center justify-between flex-wrap gap-4 p-5 rounded-[var(--radius-lg)] text-white"
+            className="mt-6 md:mt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 md:p-5 rounded-[var(--radius-lg)] text-white"
             style={{ background: 'var(--color-primary)' }}
           >
             <div>

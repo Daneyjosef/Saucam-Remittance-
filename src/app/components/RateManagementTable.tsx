@@ -42,11 +42,11 @@ export default function RateManagementTable({ onBack, onLogout }: RateManagement
 
           <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
             <Button variant="contained" startIcon={<Add />} onClick={handleAddNewRate}
-              sx={{ bgcolor: 'var(--color-primary)', '&:hover': { bgcolor: 'var(--color-primary-hover)' }, px: 3 }}>
+              sx={{ bgcolor: 'var(--color-primary)', '&:hover': { bgcolor: 'var(--color-primary-hover)' }, px: 3, flex: { xs: '1 1 auto', sm: 'none' } }}>
               Add New Rate
             </Button>
             <Button variant="contained" startIcon={<CloudUpload />} onClick={handlePushRates}
-              sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' }, px: 3 }}>
+              sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' }, px: 3, flex: { xs: '1 1 auto', sm: 'none' } }}>
               Push Rates to All Branches
             </Button>
           </Box>
@@ -104,16 +104,16 @@ export default function RateManagementTable({ onBack, onLogout }: RateManagement
             </TableContainer>
           </Paper>
 
-          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-            <Paper sx={{ flex: 1, p: 2.5, borderLeft: '4px solid var(--color-primary)' }}>
+          <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
+            <Paper sx={{ flex: '1 1 140px', p: 2.5, borderLeft: '4px solid var(--color-primary)' }}>
               <Typography variant="caption" color="text.secondary">Total Currency Pairs</Typography>
               <Typography variant="h4" sx={{ color: 'var(--color-primary)', mt: 0.5 }}>{rates.length}</Typography>
             </Paper>
-            <Paper sx={{ flex: 1, p: 2.5, borderLeft: '4px solid var(--color-accent)' }}>
+            <Paper sx={{ flex: '1 1 140px', p: 2.5, borderLeft: '4px solid var(--color-accent)' }}>
               <Typography variant="caption" color="text.secondary">Active Rates</Typography>
               <Typography variant="h4" sx={{ color: 'var(--color-accent)', mt: 0.5 }}>{rates.filter((r) => r.status === 'Active').length}</Typography>
             </Paper>
-            <Paper sx={{ flex: 1, p: 2.5, borderLeft: '4px solid var(--color-warning)' }}>
+            <Paper sx={{ flex: '1 1 140px', p: 2.5, borderLeft: '4px solid var(--color-warning)' }}>
               <Typography variant="caption" color="text.secondary">Average Spread</Typography>
               <Typography variant="h4" sx={{ color: 'var(--color-warning)', mt: 0.5 }}>{(rates.reduce((sum, r) => sum + r.spread, 0) / rates.length).toFixed(2)}%</Typography>
             </Paper>

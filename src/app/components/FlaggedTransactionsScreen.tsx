@@ -84,11 +84,11 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout }: FlaggedT
           </Box>
 
           {/* Filters and Actions */}
-          <Paper sx={{ p: 3, mb: 3 }}>
+          <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3 }}>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-              <TextField label="From Date" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 180 }} />
-              <TextField label="To Date" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: 180 }} />
-              <FormControl sx={{ minWidth: 220 }}>
+              <TextField label="From Date" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: { xs: '100%', sm: 180 }, flex: { xs: '1 1 100%', sm: 'none' } }} />
+              <TextField label="To Date" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} InputLabelProps={{ shrink: true }} sx={{ minWidth: { xs: '100%', sm: 180 }, flex: { xs: '1 1 100%', sm: 'none' } }} />
+              <FormControl sx={{ minWidth: { xs: '100%', sm: 220 }, flex: { xs: '1 1 100%', sm: 'none' } }}>
                 <InputLabel>Branch</InputLabel>
                 <Select value={selectedBranch} label="Branch" onChange={(e) => setSelectedBranch(e.target.value)}>
                   {branches.map((branch) => <MenuItem key={branch} value={branch}>{branch}</MenuItem>)}
@@ -160,7 +160,7 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout }: FlaggedT
                       <TableCell><Chip label={txn.status} size="small" sx={{ ...getStatusColor(txn.status), fontWeight: 'var(--weight-semibold)', minWidth: 100 }} /></TableCell>
                       <TableCell align="center">
                         {txn.status === 'Pending' && (
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
                             <Button size="small" variant="contained" startIcon={<CheckCircle />} onClick={() => handleApprove(txn.id)}
                               sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' } }}>
                               Approve
