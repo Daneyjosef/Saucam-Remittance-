@@ -17,12 +17,6 @@ const mockUsers: Record<string, { password: string; role: string }> = {
   'chioma.n':  { password: 'manage123', role: 'Manager' },
 };
 
-const defaultCreds = [
-  { user: 'jessica.m', pass: 'teller123', role: 'Teller',     color: 'var(--color-info)' },
-  { user: 'emeka.o',   pass: 'teller123', role: 'Teller',     color: 'var(--color-info)' },
-  { user: 'mary.o',    pass: 'comply123', role: 'Compliance', color: 'var(--color-purple)' },
-  { user: 'chioma.n',  pass: 'manage123', role: 'Manager',    color: 'var(--color-warning-dark)' },
-];
 
 export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps) {
   const [username, setUsername] = useState('');
@@ -121,6 +115,9 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
               <div className="flex flex-col gap-4">
                 {/* Username */}
                 <div className="relative">
+                  <span className="pointer-events-none" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 1 }}>
+                    <Person style={{ color: 'var(--color-primary)', fontSize: 20 }} />
+                  </span>
                   <input
                     type="text"
                     placeholder="Username"
@@ -128,13 +125,16 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     autoComplete="username"
-                    className={`input-base pl-11 ${error ? 'input-error' : ''}`}
+                    className={`input-base ${error ? 'input-error' : ''}`}
+                    style={{ paddingLeft: 44 }}
                   />
-                  <Person className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-primary)', fontSize: 20 }} />
                 </div>
 
                 {/* Password */}
                 <div className="relative">
+                  <span className="pointer-events-none" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 1 }}>
+                    <Lock style={{ color: 'var(--color-primary)', fontSize: 20 }} />
+                  </span>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Password"
@@ -142,14 +142,13 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className={`input-base pl-11 pr-12 ${error ? 'input-error' : ''}`}
+                    className={`input-base ${error ? 'input-error' : ''}`}
+                    style={{ paddingLeft: 44, paddingRight: 48 }}
                   />
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-primary)', fontSize: 20 }} />
                   <IconButton
                     onClick={() => setShowPassword(!showPassword)}
                     size="small"
-                    className="absolute right-2 top-1/2 -translate-y-1/2"
-                    style={{ color: 'var(--color-text-3)' }}
+                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-3)' }}
                   >
                     {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                   </IconButton>
@@ -212,43 +211,6 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
               <AdminPanelSettings style={{ fontSize: 20 }} />
               Admin Portal
             </motion.button>
-
-            {/* Default creds helper */}
-            <div
-              className="mt-5 p-4 rounded-[var(--radius-md)] border"
-              style={{ background: 'var(--color-bg-subtle)', borderColor: 'var(--color-primary-subtle)' }}
-            >
-              <p
-                className="m-0 mb-3 text-xs font-bold uppercase"
-                style={{ color: 'var(--color-admin)', letterSpacing: 'var(--tracking-wider)' }}
-              >
-                Default Staff Credentials
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {defaultCreds.map((c) => (
-                  <motion.div
-                    key={c.user}
-                    whileHover={{ scale: 1.03, y: -1 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => { setUsername(c.user); setPassword(c.pass); setError(''); }}
-                    className="p-2.5 rounded-[var(--radius-sm)] cursor-pointer transition-all duration-150"
-                    style={{ background: 'var(--color-surface)', border: `1.5px solid var(--color-primary-subtle)` }}
-                  >
-                    <span className="block font-mono font-bold text-xs leading-snug" style={{ color: 'var(--color-text-1)', fontSize: '0.8rem' }}>{c.user}</span>
-                    <span className="block font-mono text-xs leading-snug" style={{ color: 'var(--color-text-3)', fontSize: 'var(--text-sm)' }}>{c.pass}</span>
-                    <span
-                      className="inline-block mt-1 px-2 py-0.5 rounded-[var(--radius-pill)] text-[10px] font-bold"
-                      style={{ background: `${c.color}18`, color: c.color }}
-                    >
-                      {c.role}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-              <p className="m-0 mt-3 text-center" style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-4)' }}>
-                Click any card to auto-fill · Remove before production
-              </p>
-            </div>
 
             <p className="m-0 mt-5 text-center text-sm" style={{ color: 'var(--color-text-4)' }}>
               © {new Date().getFullYear()} Saucam Pro · All rights reserved
