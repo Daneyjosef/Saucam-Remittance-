@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { type PasswordResetRequest, RESET_REQUESTS_KEY } from './LoginScreen';
 import {
   Avatar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, Dialog,
@@ -106,7 +107,20 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
   const [branches, setBranches] = useState<Branch[]>(initBranches);
   const [floats, setFloats] = useState<CurrencyFloat[]>(initFloats);
   const [transactions, setTransactions] = useState<FlaggedTransaction[]>(initTransactions);
+  const [resetRequests, setResetRequests] = useState<PasswordResetRequest[]>([]);
   const pendingFlags = transactions.filter((t) => t.status === 'Pending').length;
+  const pendingResets = resetRequests.filter((r) => r.status === 'Pending').length;
+
+  // Load reset requests from localStorage on mount and whenever the tab becomes visible
+  useEffect(() => {
+    const load = () => {
+      const raw = localStorage.getItem(RESET_REQUESTS_KEY);
+      if (raw) setResetRequests(JSON.parse(raw));
+    };
+    load();
+    window.addEventListener('focus', load);
+    return () => window.removeEventListener('focus', load);
+  }, []);
 
   const navItems: NavItem[] = [
     { id: 'overview',   label: 'Overview',          icon: <Dashboard /> },
@@ -215,7 +229,12 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
             <div className="text-xs text-[var(--color-text-3)] mt-0.5">{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
           </div>
           <div className="flex items-center gap-3">
-            <IconButton size="small"><Notifications style={{ fontSize: 18, color: 'var(--color-text-3)' }} /></IconButton>
+            <div className="relative" onClick={() => setSection('users')} style={{ cursor: 'pointer' }}>
+              <IconButton size="small"><Notifications style={{ fontSize: 18, color: pendingResets > 0 ? 'var(--color-admin)' : 'var(--color-text-3)' }} /></IconButton>
+              {pendingResets > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center text-white rounded-full text-[9px] font-bold" style={{ background: '#ef4444', minWidth: 16, height: 16, padding: '0 3px' }}>{pendingResets}</span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Avatar style={{ width: 34, height: 34, background: '#312e81', fontSize: 13, fontWeight: 700 }}>SA</Avatar>
               <div>
@@ -229,7 +248,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           {section === 'overview'   && <OverviewSection users={users} transactions={transactions} branches={branches} onNavigate={setSection} />}
-          {section === 'users'      && <UsersSection users={users} setUsers={setUsers} />}
+          {section === 'users'      && <UsersSection users={users} setUsers={setUsers} resetRequests={resetRequests} setResetRequests={setResetRequests} />}
           {section === 'branches'   && <BranchesSection branches={branches} setBranches={setBranches} />}
           {section === 'rates'      && <RatesSection rates={rates} setRates={setRates} />}
           {section === 'float'      && <FloatSection floats={floats} setFloats={setFloats} />}
@@ -325,7 +344,24 @@ function OverviewSection({ users, transactions, branches, onNavigate }: { users:
 
 // ─── Users ──────────────────────────────────────────────────────────────────────
 
-function UsersSection({ users, setUsers }: { users: User[]; setUsers: React.Dispatch<React.SetStateAction<User[]>> }) {
+function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
+  users: User[];
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  resetRequests: PasswordResetRequest[];
+  setResetRequests: React.Dispatch<React.SetStateAction<PasswordResetRequest[]>>;
+}) {
+  const resolveReset = (id: string) => {
+    const updated = resetRequests.map((r) => r.id === id ? { ...r, status: 'Resolved' as const } : r);
+    setResetRequests(updated);
+    localStorage.setItem(RESET_REQUESTS_KEY, JSON.stringify(updated));
+    toast.success('Request marked as resolved. Contact the staff member with their new password.');
+  };
+  const dismissReset = (id: string) => {
+    const updated = resetRequests.filter((r) => r.id !== id);
+    setResetRequests(updated);
+    localStorage.setItem(RESET_REQUESTS_KEY, JSON.stringify(updated));
+    toast.info('Request dismissed');
+  };
   const [modalOpen, setModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [showPw, setShowPw] = useState(false);
@@ -401,6 +437,55 @@ function UsersSection({ users, setUsers }: { users: User[]; setUsers: React.Disp
           </Table>
         </TableContainer>
       </div>
+      {/* Password Reset Requests */}
+      {resetRequests.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Lock style={{ color: 'var(--color-danger)', fontSize: 20 }} />
+            <span className="font-bold text-[#1e1b4b] text-base">Password Reset Requests</span>
+            {resetRequests.filter((r) => r.status === 'Pending').length > 0 && (
+              <AppBadge variant="danger">{resetRequests.filter((r) => r.status === 'Pending').length} Pending</AppBadge>
+            )}
+          </div>
+          <div className="flex flex-col gap-3">
+            {resetRequests.map((req) => (
+              <div
+                key={req.id}
+                className="flex items-center justify-between gap-4 p-4 rounded-[var(--radius-lg)] border"
+                style={{
+                  background: req.status === 'Pending' ? 'var(--color-danger-subtle)' : 'var(--color-bg-subtle)',
+                  borderColor: req.status === 'Pending' ? 'var(--color-danger-border)' : 'var(--color-border)',
+                }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: req.status === 'Pending' ? 'var(--color-danger-bg)' : 'var(--color-surface-muted)' }}>
+                    <Lock style={{ fontSize: 16, color: req.status === 'Pending' ? 'var(--color-danger)' : 'var(--color-text-3)' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate" style={{ color: 'var(--color-text-1)' }}>
+                      <span className="font-mono">{req.username}</span> — <span className="font-normal">{req.email}</span>
+                    </div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-3)' }}>Requested: {req.requestedAt} · {req.id}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <AppBadge variant={req.status === 'Pending' ? 'danger' : 'success'} dot size="sm">{req.status}</AppBadge>
+                  {req.status === 'Pending' && (
+                    <>
+                      <AppButton variant="accent" size="sm" leftIcon={<CheckCircle style={{ fontSize: 14 }} />} onClick={() => resolveReset(req.id)}>Resolve</AppButton>
+                      <AppButton variant="secondary" size="sm" onClick={() => dismissReset(req.id)}>Dismiss</AppButton>
+                    </>
+                  )}
+                  {req.status === 'Resolved' && (
+                    <AppButton variant="secondary" size="sm" onClick={() => dismissReset(req.id)}>Clear</AppButton>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Dialog open={modalOpen} onClose={() => { setModalOpen(false); reset(); }} maxWidth="sm" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
         <DialogTitle style={{ padding: 0 }}>
           <div className="flex items-center justify-between px-6 py-4" style={{ background: 'linear-gradient(135deg,#312e81,#4c1d95)' }}>
