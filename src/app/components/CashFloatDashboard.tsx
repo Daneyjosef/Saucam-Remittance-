@@ -1,433 +1,191 @@
 import { useState } from 'react';
-import {
-  Box,
-  Paper,
-  Typography,
-  AppBar,
-  Toolbar,
-  Card,
-  CardContent,
-  Button,
-  TextField,
-  Divider,
-  IconButton,
-  Chip,
-  Alert,
-} from '@mui/material';
-import {
-  AccountBalance,
-  ArrowBack,
-  Add,
-  Remove,
-  Warning,
-  CheckCircle,
-  Calculate,
-} from '@mui/icons-material';
+import { Alert, Divider } from '@mui/material';
+import { AccountBalance, Add, Remove, Warning, CheckCircle, Calculate } from '@mui/icons-material';
+import AppShell from './AppShell';
+import AppButton from './ui/AppButton';
+import AppBadge from './ui/AppBadge';
 import { toast, Toaster } from 'sonner';
 
 interface CurrencyFloat {
-  code: string;
-  name: string;
-  flag: string;
-  openingFloat: number;
-  currentFloat: number;
-  lowThreshold: number;
-  physicalCount: string;
+  code: string; name: string; flag: string;
+  openingFloat: number; currentFloat: number; lowThreshold: number; physicalCount: string;
 }
 
-interface CashFloatDashboardProps {
-  onBack?: () => void;
-}
+interface CashFloatDashboardProps { onBack?: () => void; onLogout?: () => void; }
 
-export default function CashFloatDashboard({ onBack }: CashFloatDashboardProps) {
+export default function CashFloatDashboard({ onBack, onLogout }: CashFloatDashboardProps) {
   const [floats, setFloats] = useState<CurrencyFloat[]>([
-    {
-      code: 'NGN',
-      name: 'Nigerian Naira',
-      flag: '🇳🇬',
-      openingFloat: 500000,
-      currentFloat: 387500,
-      lowThreshold: 100000,
-      physicalCount: '',
-    },
-    {
-      code: 'USD',
-      name: 'US Dollar',
-      flag: '🇺🇸',
-      openingFloat: 10000,
-      currentFloat: 7650,
-      lowThreshold: 2000,
-      physicalCount: '',
-    },
-    {
-      code: 'GBP',
-      name: 'British Pound',
-      flag: '🇬🇧',
-      openingFloat: 5000,
-      currentFloat: 1850,
-      lowThreshold: 1000,
-      physicalCount: '',
-    },
-    {
-      code: 'EUR',
-      name: 'Euro',
-      flag: '🇪🇺',
-      openingFloat: 8000,
-      currentFloat: 5420,
-      lowThreshold: 1500,
-      physicalCount: '',
-    },
+    { code: 'NGN', name: 'Nigerian Naira', flag: '🇳🇬', openingFloat: 500000, currentFloat: 387500, lowThreshold: 100000, physicalCount: '' },
+    { code: 'USD', name: 'US Dollar', flag: '🇺🇸', openingFloat: 10000, currentFloat: 7650, lowThreshold: 2000, physicalCount: '' },
+    { code: 'GBP', name: 'British Pound', flag: '🇬🇧', openingFloat: 5000, currentFloat: 1850, lowThreshold: 1000, physicalCount: '' },
+    { code: 'EUR', name: 'Euro', flag: '🇪🇺', openingFloat: 8000, currentFloat: 5420, lowThreshold: 1500, physicalCount: '' },
   ]);
-
-  const [cashInAmount, setCashInAmount] = useState<{ [key: string]: string }>({});
-  const [cashOutAmount, setCashOutAmount] = useState<{ [key: string]: string }>({});
+  const [cashInAmount, setCashInAmount] = useState<Record<string, string>>({});
+  const [cashOutAmount, setCashOutAmount] = useState<Record<string, string>>({});
 
   const handleCashIn = (code: string) => {
     const amount = parseFloat(cashInAmount[code] || '0');
-    if (amount > 0) {
-      setFloats(
-        floats.map((f) =>
-          f.code === code ? { ...f, currentFloat: f.currentFloat + amount } : f
-        )
-      );
-      setCashInAmount({ ...cashInAmount, [code]: '' });
-      toast.success(`Added ${amount.toLocaleString()} ${code} to float`);
-    }
+    if (amount > 0) { setFloats(floats.map((f) => f.code === code ? { ...f, currentFloat: f.currentFloat + amount } : f)); setCashInAmount({ ...cashInAmount, [code]: '' }); toast.success(`Added ${amount.toLocaleString()} ${code} to float`); }
   };
-
   const handleCashOut = (code: string) => {
     const amount = parseFloat(cashOutAmount[code] || '0');
-    if (amount > 0) {
-      setFloats(
-        floats.map((f) =>
-          f.code === code ? { ...f, currentFloat: f.currentFloat - amount } : f
-        )
-      );
-      setCashOutAmount({ ...cashOutAmount, [code]: '' });
-      toast.success(`Removed ${amount.toLocaleString()} ${code} from float`);
-    }
+    if (amount > 0) { setFloats(floats.map((f) => f.code === code ? { ...f, currentFloat: f.currentFloat - amount } : f)); setCashOutAmount({ ...cashOutAmount, [code]: '' }); toast.success(`Removed ${amount.toLocaleString()} ${code} from float`); }
   };
-
-  const handlePhysicalCountChange = (code: string, value: string) => {
-    setFloats(
-      floats.map((f) => (f.code === code ? { ...f, physicalCount: value } : f))
-    );
-  };
-
-  const calculateDifference = (currency: CurrencyFloat) => {
-    const physical = parseFloat(currency.physicalCount) || 0;
-    return physical - currency.currentFloat;
-  };
-
-  const isLowFloat = (currency: CurrencyFloat) => {
-    return currency.currentFloat < currency.lowThreshold;
-  };
+  const calcDiff = (f: CurrencyFloat) => (parseFloat(f.physicalCount) || 0) - f.currentFloat;
+  const isLow = (f: CurrencyFloat) => f.currentFloat < f.lowThreshold;
 
   const handleReconcile = () => {
-    const hasAllCounts = floats.every((f) => f.physicalCount && parseFloat(f.physicalCount) >= 0);
-    if (!hasAllCounts) {
-      toast.error('Please enter physical count for all currencies');
-      return;
-    }
-    toast.success('End of day reconciliation completed', {
-      description: 'Float report has been generated and submitted.',
-    });
+    const ok = floats.every((f) => f.physicalCount && parseFloat(f.physicalCount) >= 0);
+    if (!ok) { toast.error('Please enter physical count for all currencies'); return; }
+    toast.success('End of day reconciliation completed', { description: 'Float report has been generated and submitted.' });
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: '#f5f7fa' }}>
+    <AppShell title="Cash Float Dashboard" subtitle="Downtown Main Office" icon={<AccountBalance style={{ fontSize: 18 }} />} userLabel="Jessica Martinez" userRole="Teller" onBack={onBack} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
-
-      {/* Top Bar */}
-      <AppBar position="static" sx={{ bgcolor: '#1e3a8a' }}>
-        <Toolbar>
-          {onBack && (
-            <IconButton onClick={onBack} sx={{ color: 'white', mr: 2 }}>
-              <ArrowBack />
-            </IconButton>
-          )}
-          <AccountBalance sx={{ mr: 2 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Cash Float Dashboard
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-            <Box>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>Branch</Typography>
-              <Typography variant="body2">Downtown Main Office</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>Teller</Typography>
-              <Typography variant="body2">Jessica Martinez</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>Date</Typography>
-              <Typography variant="body2">June 3, 2026</Typography>
-            </Box>
-          </Box>
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 2, md: 4 } }}>
-        <Box sx={{ maxWidth: 1600, mx: 'auto' }}>
-          {/* Header */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h4" sx={{ mb: 1, color: '#1e3a8a', fontSize: { xs: '1.5rem', md: '2rem' } }}>
+      <div className="p-4 md:p-8">
+        <div style={{ maxWidth: 'var(--container-max)', margin: '0 auto' }}>
+          <div className="mb-6">
+            <h1 className="m-0 mb-1 font-extrabold leading-tight" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', color: 'var(--color-primary)' }}>
               Branch Cash Float Management
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Monitor and manage cash float levels across all currencies
-            </Typography>
-          </Box>
+            </h1>
+            <p className="m-0 text-sm" style={{ color: 'var(--color-text-3)' }}>Monitor and manage cash float levels across all currencies</p>
+          </div>
 
-          {/* Currency Float Cards */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' },
-              gap: 3,
-            }}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {floats.map((currency) => (
-              <Card
+              <div
                 key={currency.code}
-                sx={{
-                  border: isLowFloat(currency) ? '2px solid #dc2626' : '1px solid #e5e7eb',
-                  boxShadow: isLowFloat(currency) ? '0 4px 12px rgba(220, 38, 38, 0.15)' : 2,
+                className="bg-white rounded-[var(--radius-lg)] border p-5"
+                style={{
+                  borderColor: isLow(currency) ? 'var(--color-danger)' : 'var(--color-border)',
+                  boxShadow: isLow(currency) ? 'var(--shadow-glow-danger)' : 'var(--shadow-sm)',
+                  borderWidth: isLow(currency) ? 2 : 1,
                 }}
               >
-                <CardContent sx={{ p: 3 }}>
-                    {/* Currency Header */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Typography variant="h3">{currency.flag}</Typography>
-                        <Box>
-                          <Typography variant="h6" sx={{ color: '#1e3a8a' }}>
-                            {currency.code}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {currency.name}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {isLowFloat(currency) && (
-                        <Chip
-                          icon={<Warning />}
-                          label="LOW FLOAT"
-                          color="error"
-                          sx={{ fontWeight: 600 }}
-                        />
-                      )}
-                    </Box>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{currency.flag}</span>
+                    <div>
+                      <div className="font-bold text-base leading-none" style={{ color: 'var(--color-primary)' }}>{currency.code}</div>
+                      <div className="text-xs mt-0.5" style={{ color: 'var(--color-text-3)' }}>{currency.name}</div>
+                    </div>
+                  </div>
+                  {isLow(currency) && (
+                    <AppBadge variant="danger" dot>
+                      <Warning style={{ fontSize: 12 }} /> LOW FLOAT
+                    </AppBadge>
+                  )}
+                </div>
 
-                    {/* Float Information */}
-                    <Box
-                      sx={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: 2,
-                        mb: 3,
-                        p: 2,
-                        bgcolor: isLowFloat(currency) ? '#fee2e2' : '#f0f9ff',
-                        borderRadius: 1,
-                      }}
+                {/* Float stats */}
+                <div
+                  className="grid grid-cols-2 gap-4 mb-4 p-3 rounded-[var(--radius-sm)]"
+                  style={{ background: isLow(currency) ? 'var(--color-danger-bg)' : 'var(--color-info-subtle)' }}
+                >
+                  <div>
+                    <div className="text-xs" style={{ color: 'var(--color-text-3)' }}>Opening Float</div>
+                    <div className="text-base font-bold mt-0.5" style={{ color: 'var(--color-text-3)' }}>{currency.openingFloat.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs" style={{ color: 'var(--color-text-3)' }}>Current Float</div>
+                    <div className="text-base font-bold mt-0.5" style={{ color: isLow(currency) ? 'var(--color-danger)' : 'var(--color-accent)' }}>{currency.currentFloat.toLocaleString()}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <div className="text-xs" style={{ color: 'var(--color-text-3)' }}>Low Threshold</div>
+                    <div className="text-sm font-medium mt-0.5" style={{ color: 'var(--color-warning)' }}>{currency.lowThreshold.toLocaleString()} {currency.code}</div>
+                  </div>
+                </div>
+
+                {isLow(currency) && <Alert severity="error" style={{ marginBottom: 12, borderRadius: 'var(--radius-sm)' }}>Current float is below threshold. Consider adding cash.</Alert>}
+
+                {/* Cash operations */}
+                <div className="mb-4">
+                  <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-primary)' }}>Cash Operations</div>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="number"
+                      placeholder="Cash In Amount"
+                      value={cashInAmount[currency.code] || ''}
+                      onChange={(e) => setCashInAmount({ ...cashInAmount, [currency.code]: e.target.value })}
+                      className="input-base flex-1 py-2"
+                    />
+                    <AppButton variant="accent" size="sm" leftIcon={<Add style={{ fontSize: 16 }} />} onClick={() => handleCashIn(currency.code)}>
+                      Cash In
+                    </AppButton>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Cash Out Amount"
+                      value={cashOutAmount[currency.code] || ''}
+                      onChange={(e) => setCashOutAmount({ ...cashOutAmount, [currency.code]: e.target.value })}
+                      className="input-base flex-1 py-2"
+                    />
+                    <AppButton variant="danger" size="sm" leftIcon={<Remove style={{ fontSize: 16 }} />} onClick={() => handleCashOut(currency.code)}>
+                      Cash Out
+                    </AppButton>
+                  </div>
+                </div>
+
+                <Divider style={{ margin: '12px 0' }} />
+
+                {/* EOD Reconciliation */}
+                <div>
+                  <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-primary)' }}>End of Day Reconciliation</div>
+                  <div className="flex gap-3 items-start">
+                    <div className="flex-1 relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-text-3)' }}>{currency.code}</span>
+                      <input
+                        type="number"
+                        placeholder="Physical Cash Count"
+                        value={currency.physicalCount}
+                        onChange={(e) => setFloats(floats.map((f) => f.code === currency.code ? { ...f, physicalCount: e.target.value } : f))}
+                        className="input-base py-2 pl-12"
+                      />
+                    </div>
+                    <div
+                      className="min-w-[130px] p-3 rounded-[var(--radius-sm)] border text-center"
+                      style={{ background: 'var(--color-surface-subtle)', borderColor: 'var(--color-border)' }}
                     >
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Opening Float
-                        </Typography>
-                        <Typography variant="h6" sx={{ color: '#64748b' }}>
-                          {currency.openingFloat.toLocaleString()}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          Current Float
-                        </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: isLowFloat(currency) ? '#dc2626' : '#16a34a' }}
-                        >
-                          {currency.currentFloat.toLocaleString()}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ gridColumn: 'span 2' }}>
-                        <Typography variant="caption" color="text.secondary">
-                          Low Threshold
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#f59e0b' }}>
-                          {currency.lowThreshold.toLocaleString()} {currency.code}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* Low Float Alert */}
-                    {isLowFloat(currency) && (
-                      <Alert severity="error" sx={{ mb: 2 }}>
-                        Current float is below threshold. Consider adding cash.
-                      </Alert>
-                    )}
-
-                    {/* Cash In/Out Section */}
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ mb: 1.5, color: '#1e3a8a' }}>
-                        Cash Operations
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="number"
-                          label="Cash In Amount"
-                          value={cashInAmount[currency.code] || ''}
-                          onChange={(e) =>
-                            setCashInAmount({ ...cashInAmount, [currency.code]: e.target.value })
-                          }
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<Add />}
-                          onClick={() => handleCashIn(currency.code)}
-                          sx={{
-                            bgcolor: '#16a34a',
-                            '&:hover': { bgcolor: '#15803d' },
-                            minWidth: 120,
-                          }}
-                        >
-                          Cash In
-                        </Button>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="number"
-                          label="Cash Out Amount"
-                          value={cashOutAmount[currency.code] || ''}
-                          onChange={(e) =>
-                            setCashOutAmount({ ...cashOutAmount, [currency.code]: e.target.value })
-                          }
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<Remove />}
-                          onClick={() => handleCashOut(currency.code)}
-                          sx={{
-                            bgcolor: '#dc2626',
-                            '&:hover': { bgcolor: '#b91c1c' },
-                            minWidth: 120,
-                          }}
-                        >
-                          Cash Out
-                        </Button>
-                      </Box>
-                    </Box>
-
-                    <Divider sx={{ my: 2 }} />
-
-                    {/* End of Day Reconciliation */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ mb: 1.5, color: '#1e3a8a' }}>
-                        End of Day Reconciliation
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                        <TextField
-                          size="small"
-                          fullWidth
-                          type="number"
-                          label="Physical Cash Count"
-                          value={currency.physicalCount}
-                          onChange={(e) =>
-                            handlePhysicalCountChange(currency.code, e.target.value)
-                          }
-                          InputProps={{
-                            startAdornment: (
-                              <Typography variant="body2" sx={{ mr: 1, color: '#64748b' }}>
-                                {currency.code}
-                              </Typography>
-                            ),
-                          }}
-                        />
-                        <Box
-                          sx={{
-                            minWidth: 140,
-                            p: 1.5,
-                            bgcolor: '#f8fafc',
-                            borderRadius: 1,
-                            border: '1px solid #e2e8f0',
-                          }}
-                        >
-                          <Typography variant="caption" color="text.secondary">
-                            Difference
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              color:
-                                currency.physicalCount && calculateDifference(currency) !== 0
-                                  ? calculateDifference(currency) > 0
-                                    ? '#16a34a'
-                                    : '#dc2626'
-                                  : '#64748b',
-                            }}
-                          >
-                            {currency.physicalCount
-                              ? calculateDifference(currency) > 0
-                                ? `+${calculateDifference(currency).toLocaleString()}`
-                                : calculateDifference(currency).toLocaleString()
-                              : '—'}
-                          </Typography>
-                        </Box>
-                      </Box>
-                      {currency.physicalCount && calculateDifference(currency) !== 0 && (
-                        <Alert
-                          severity={calculateDifference(currency) > 0 ? 'success' : 'error'}
-                          sx={{ mt: 1.5 }}
-                        >
-                          {calculateDifference(currency) > 0 ? 'Surplus: ' : 'Shortage: '}
-                          {Math.abs(calculateDifference(currency)).toLocaleString()} {currency.code}
-                        </Alert>
-                      )}
-                      {currency.physicalCount && calculateDifference(currency) === 0 && (
-                        <Alert severity="success" icon={<CheckCircle />} sx={{ mt: 1.5 }}>
-                          Balanced - No discrepancy
-                        </Alert>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
+                      <div className="text-xs" style={{ color: 'var(--color-text-3)' }}>Difference</div>
+                      <div
+                        className="text-base font-bold mt-0.5"
+                        style={{ color: currency.physicalCount && calcDiff(currency) !== 0 ? (calcDiff(currency) > 0 ? 'var(--color-accent)' : 'var(--color-danger)') : 'var(--color-text-3)' }}
+                      >
+                        {currency.physicalCount ? (calcDiff(currency) > 0 ? `+${calcDiff(currency).toLocaleString()}` : calcDiff(currency).toLocaleString()) : '—'}
+                      </div>
+                    </div>
+                  </div>
+                  {currency.physicalCount && calcDiff(currency) !== 0 && (
+                    <Alert severity={calcDiff(currency) > 0 ? 'success' : 'error'} style={{ marginTop: 8, borderRadius: 'var(--radius-sm)' }}>
+                      {calcDiff(currency) > 0 ? 'Surplus: ' : 'Shortage: '}{Math.abs(calcDiff(currency)).toLocaleString()} {currency.code}
+                    </Alert>
+                  )}
+                  {currency.physicalCount && calcDiff(currency) === 0 && (
+                    <Alert severity="success" icon={<CheckCircle />} style={{ marginTop: 8, borderRadius: 'var(--radius-sm)' }}>Balanced - No discrepancy</Alert>
+                  )}
+                </div>
+              </div>
             ))}
-          </Box>
+          </div>
 
-          {/* Reconciliation Action Button */}
-          <Paper sx={{ mt: 4, p: 3, bgcolor: '#1e3a8a', color: 'white' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h6" sx={{ mb: 0.5 }}>
-                  Complete End of Day Reconciliation
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Ensure all physical counts are entered before submitting
-                </Typography>
-              </Box>
-              <Button
-                variant="contained"
-                size="large"
-                startIcon={<Calculate />}
-                onClick={handleReconcile}
-                sx={{
-                  bgcolor: '#16a34a',
-                  '&:hover': { bgcolor: '#15803d' },
-                  px: 4,
-                  py: 1.5,
-                }}
-              >
-                Submit Reconciliation
-              </Button>
-            </Box>
-          </Paper>
-        </Box>
-      </Box>
-    </Box>
+          {/* Submit reconciliation */}
+          <div
+            className="mt-8 flex items-center justify-between flex-wrap gap-4 p-5 rounded-[var(--radius-lg)] text-white"
+            style={{ background: 'var(--color-primary)' }}
+          >
+            <div>
+              <div className="font-bold text-lg">Complete End of Day Reconciliation</div>
+              <div className="text-white/90 text-sm mt-0.5">Ensure all physical counts are entered before submitting</div>
+            </div>
+            <AppButton variant="accent" size="lg" leftIcon={<Calculate style={{ fontSize: 20 }} />} onClick={handleReconcile}>
+              Submit Reconciliation
+            </AppButton>
+          </div>
+        </div>
+      </div>
+    </AppShell>
   );
 }
