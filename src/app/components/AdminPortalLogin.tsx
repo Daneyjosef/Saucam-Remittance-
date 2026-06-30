@@ -112,6 +112,9 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
               <form onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-4">
                   <div className="relative">
+                    <span className="pointer-events-none" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 1 }}>
+                      <Shield style={{ color: 'var(--color-purple)', fontSize: 20 }} />
+                    </span>
                     <input
                       type="text"
                       placeholder="Admin Username"
@@ -119,13 +122,15 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
                       onChange={(e) => setUsername(e.target.value)}
                       required
                       autoComplete="username"
-                      className={`input-base input-admin pl-11 ${error ? 'input-error' : ''}`}
-                      style={{ background: 'var(--color-purple-subtle)' }}
+                      className={`input-base input-admin ${error ? 'input-error' : ''}`}
+                      style={{ background: 'var(--color-purple-subtle)', paddingLeft: 44 }}
                     />
-                    <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-purple)', fontSize: 20 }} />
                   </div>
 
                   <div className="relative">
+                    <span className="pointer-events-none" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', zIndex: 1 }}>
+                      <Lock style={{ color: 'var(--color-purple)', fontSize: 20 }} />
+                    </span>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Password"
@@ -133,15 +138,13 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      className={`input-base input-admin pl-11 pr-12 ${error ? 'input-error' : ''}`}
-                      style={{ background: 'var(--color-purple-subtle)' }}
+                      className={`input-base input-admin ${error ? 'input-error' : ''}`}
+                      style={{ background: 'var(--color-purple-subtle)', paddingLeft: 44, paddingRight: 48 }}
                     />
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-purple)', fontSize: 20 }} />
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       size="small"
-                      className="absolute right-2 top-1/2 -translate-y-1/2"
-                      style={{ color: 'var(--color-text-3)' }}
+                      style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-3)' }}
                     >
                       {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                     </IconButton>
