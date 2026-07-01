@@ -132,14 +132,10 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
           >
             <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}>
               <div
-                className="inline-flex items-center justify-center w-[76px] h-[76px] rounded-full border-2 border-white/25 mb-5"
-                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', boxShadow: 'var(--shadow-lg)' }}
+                className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-2xl mb-5"
+                style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', boxShadow: 'var(--shadow-lg)', padding: 10 }}
               >
-                <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                <img src="/logo.png" alt="Saucam Pro" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
             </motion.div>
             <h1

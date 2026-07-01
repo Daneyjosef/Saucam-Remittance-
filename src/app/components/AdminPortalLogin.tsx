@@ -79,10 +79,10 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
             >
               <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}>
                 <div
-                  className="inline-flex items-center justify-center w-[76px] h-[76px] rounded-full border-2 border-white/22 mb-5"
-                  style={{ background: 'rgba(255,255,255,0.12)', boxShadow: 'var(--shadow-lg)' }}
+                  className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-2xl mb-5"
+                  style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', boxShadow: 'var(--shadow-lg)', padding: 10 }}
                 >
-                  <Shield style={{ fontSize: 36, color: 'white' }} />
+                  <img src="/logo.png" alt="Saucam Pro" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               </motion.div>
               <h1
