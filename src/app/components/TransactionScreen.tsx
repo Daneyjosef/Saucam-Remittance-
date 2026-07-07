@@ -69,9 +69,9 @@ const mockTransactions: Transaction[] = [
   { id: 'TXN-003', time: '13:55', type: 'Remittance In', fromCurrency: 'JPY', toCurrency: 'USD', amount: 50000, customer: 'Chen Wei', status: 'Completed' },
 ];
 
-interface TransactionScreenProps { onLogout?: () => void }
+interface TransactionScreenProps { onLogout?: () => void; userName?: string; userRoleLabel?: string; }
 
-export default function TransactionScreen({ onLogout }: TransactionScreenProps) {
+export default function TransactionScreen({ onLogout, userName, userRoleLabel }: TransactionScreenProps) {
   const [selectedType, setSelectedType] = useState<string>('exchange');
   const [fromCurrency, setFromCurrency] = useState<string>('USD');
   const [toCurrency, setToCurrency] = useState<string>('EUR');
@@ -125,7 +125,7 @@ export default function TransactionScreen({ onLogout }: TransactionScreenProps) 
   };
 
   return (
-    <AppShell title="Saucam Pro" subtitle="Downtown Main Office" userLabel="Jessica Martinez" userRole="Teller" onLogout={onLogout}>
+    <AppShell title="Saucam Pro" subtitle="Downtown Main Office" userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Teller'} onLogout={onLogout}>
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left Panel - Transaction Types */}
         <Paper sx={{

@@ -11,9 +11,9 @@ interface CurrencyFloat {
   openingFloat: number; currentFloat: number; lowThreshold: number; physicalCount: string;
 }
 
-interface CashFloatDashboardProps { onBack?: () => void; onLogout?: () => void; }
+interface CashFloatDashboardProps { onBack?: () => void; onLogout?: () => void; userName?: string; userRoleLabel?: string; }
 
-export default function CashFloatDashboard({ onBack, onLogout }: CashFloatDashboardProps) {
+export default function CashFloatDashboard({ onBack, onLogout, userName, userRoleLabel }: CashFloatDashboardProps) {
   const [floats, setFloats] = useState<CurrencyFloat[]>([
     { code: 'NGN', name: 'Nigerian Naira', flag: '🇳🇬', openingFloat: 500000, currentFloat: 387500, lowThreshold: 100000, physicalCount: '' },
     { code: 'USD', name: 'US Dollar', flag: '🇺🇸', openingFloat: 10000, currentFloat: 7650, lowThreshold: 2000, physicalCount: '' },
@@ -41,7 +41,7 @@ export default function CashFloatDashboard({ onBack, onLogout }: CashFloatDashbo
   };
 
   return (
-    <AppShell title="Cash Float Dashboard" subtitle="Downtown Main Office" icon={<AccountBalance style={{ fontSize: 18 }} />} userLabel="Jessica Martinez" userRole="Teller" onBack={onBack} onLogout={onLogout}>
+    <AppShell title="Cash Float Dashboard" subtitle="Downtown Main Office" icon={<AccountBalance style={{ fontSize: 18 }} />} userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Staff'} onBack={onBack} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
       <div className="p-4 md:p-8">
         <div style={{ maxWidth: 'var(--container-max)', margin: '0 auto' }}>

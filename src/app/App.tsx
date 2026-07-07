@@ -8,6 +8,7 @@ import CashFloatDashboard from './components/CashFloatDashboard';
 import FlaggedTransactionsScreen from './components/FlaggedTransactionsScreen';
 import ExecutiveDashboard from './components/ExecutiveDashboard';
 import AdminPortal from './components/AdminPortal';
+import { getUsers } from './userStore';
 import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
 import { TrendingUp, AccountBalance, Flag, Dashboard } from '@mui/icons-material';
 
@@ -17,10 +18,14 @@ type View = 'login' | 'adminLogin' | 'adminPortal' | 'branchSelection' | 'transa
 export default function App() {
   const [currentView, setCurrentView] = useState<View>('login');
   const [userRole, setUserRole] = useState<UserRole>(null);
-  const [userName] = useState('John Doe');
+  const [userName, setUserName] = useState('');
+  const [userRoleLabel, setUserRoleLabel] = useState('');
   const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
 
-  const handleLogin = (_username: string, _password: string, role: string) => {
+  const handleLogin = (username: string, _password: string, role: string) => {
+    const staffUser = getUsers().find(u => u.username.toLowerCase() === username.toLowerCase());
+    setUserName(staffUser?.name ?? username);
+    setUserRoleLabel(staffUser?.role ?? role);
     setUserRole(role as UserRole);
     if (role === 'Teller') {
       setCurrentView('transaction');
@@ -99,16 +104,16 @@ export default function App() {
   const renderView = () => {
     switch (currentView) {
       case 'executive':
-        return <ExecutiveDashboard onBack={() => setCurrentView('branchSelection')} onGoToCompliance={() => setCurrentView('flagged')} onLogout={handleLogout} />;
+        return <ExecutiveDashboard userName={userName} userRoleLabel={userRoleLabel} onBack={() => setCurrentView('branchSelection')} onGoToCompliance={() => setCurrentView('flagged')} onLogout={handleLogout} />;
       case 'rates':
-        return <RateManagementTable onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
+        return <RateManagementTable userName={userName} userRoleLabel={userRoleLabel} onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
       case 'float':
-        return <CashFloatDashboard onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
+        return <CashFloatDashboard userName={userName} userRoleLabel={userRoleLabel} onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
       case 'flagged':
-        return <FlaggedTransactionsScreen onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
+        return <FlaggedTransactionsScreen userName={userName} userRoleLabel={userRoleLabel} onBack={() => setCurrentView('executive')} onLogout={handleLogout} />;
       case 'transaction':
       default:
-        return <TransactionScreen onLogout={handleLogout} />;
+        return <TransactionScreen userName={userName} userRoleLabel={userRoleLabel} onLogout={handleLogout} />;
     }
   };
 

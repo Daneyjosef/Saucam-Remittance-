@@ -40,15 +40,9 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
     setError('');
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    const allUsers = (JSON.parse(localStorage.getItem('saucam_staff_users_v1') || '[]') as Array<{username:string;password:string;status:string}>);
     const user = authenticateUser(username, password);
     if (!user) {
-      const names = allUsers.map(u => u.username).join(', ') || 'none';
-      const usernameMatch = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
-      const msg = usernameMatch
-        ? `Wrong password for "${usernameMatch.username}". Stored: "${usernameMatch.password}"`
-        : `Username "${username}" not found. Stored users: ${names}`;
-      setError(msg);
+      setError('Invalid username or password.');
       setLoading(false);
       return;
     }

@@ -14,6 +14,8 @@ import {
 } from 'recharts';
 
 interface ExecutiveDashboardProps {
+  userName?: string;
+  userRoleLabel?: string;
   onBack?: () => void;
   onGoToCompliance?: () => void;
   onLogout?: () => void;
@@ -54,9 +56,9 @@ const branchStatuses = [
 const thCell = 'font-semibold text-xs py-2.5 px-3 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)] text-[var(--color-text-3)]';
 const tdCell = 'py-2.5 px-3 text-sm text-[var(--color-text-2)] border-b border-[var(--color-border)]';
 
-export default function ExecutiveDashboard({ onBack, onGoToCompliance, onLogout }: ExecutiveDashboardProps) {
+export default function ExecutiveDashboard({ onBack, onGoToCompliance, onLogout, userName, userRoleLabel }: ExecutiveDashboardProps) {
   return (
-    <AppShell title="Executive Dashboard" subtitle="Real-time operations overview" userLabel="Branch Manager" userRole="Manager" onBack={onBack} onLogout={onLogout}>
+    <AppShell title="Executive Dashboard" subtitle="Real-time operations overview" userLabel={userName || 'Branch Manager'} userRole={userRoleLabel || 'Branch Manager'} onBack={onBack} onLogout={onLogout}>
       <div className="p-4 md:p-8">
         <div style={{ maxWidth: 1800, margin: '0 auto' }}>
           {/* Header */}

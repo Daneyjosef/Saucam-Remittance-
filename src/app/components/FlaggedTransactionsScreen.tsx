@@ -26,9 +26,9 @@ const mockTransactions: FlaggedTransaction[] = [
 
 const branches = ['All Branches', 'Downtown Main Office', 'Victoria Island Branch', 'Lekki Branch', 'Ikeja Branch', 'Yaba Branch'];
 
-interface FlaggedTransactionsScreenProps { onBack?: () => void; onLogout?: () => void; }
+interface FlaggedTransactionsScreenProps { onBack?: () => void; onLogout?: () => void; userName?: string; userRoleLabel?: string; }
 
-export default function FlaggedTransactionsScreen({ onBack, onLogout }: FlaggedTransactionsScreenProps) {
+export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, userRoleLabel }: FlaggedTransactionsScreenProps) {
   const [transactions, setTransactions] = useState<FlaggedTransaction[]>(mockTransactions);
   const [selectedBranch, setSelectedBranch] = useState('All Branches');
   const [dateFrom, setDateFrom] = useState('2026-06-03');
@@ -71,7 +71,7 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout }: FlaggedT
   };
 
   return (
-    <AppShell title="Compliance Review" subtitle="Flagged transactions pending review" icon={<Flag sx={{ fontSize: 18 }} />} userLabel="Mary Okafor" userRole="Compliance Officer" onBack={onBack} onLogout={onLogout}>
+    <AppShell title="Compliance Review" subtitle="Flagged transactions pending review" icon={<Flag sx={{ fontSize: 18 }} />} userLabel={userName || 'Mary Okafor'} userRole={userRoleLabel || 'Compliance Officer'} onBack={onBack} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <Box sx={{ maxWidth: 'var(--container-max)', mx: 'auto' }}>

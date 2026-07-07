@@ -18,9 +18,9 @@ const mockRates: ExchangeRate[] = [
   { id: '6', currencyPair: 'NGN/GBP', buyRate: 1820.00, sellRate: 1840.00, spread: 1.10, lastUpdated: '2026-06-03 13:45', status: 'Inactive' },
 ];
 
-interface RateManagementTableProps { onBack?: () => void; onLogout?: () => void; }
+interface RateManagementTableProps { onBack?: () => void; onLogout?: () => void; userName?: string; userRoleLabel?: string; }
 
-export default function RateManagementTable({ onBack, onLogout }: RateManagementTableProps) {
+export default function RateManagementTable({ onBack, onLogout, userName, userRoleLabel }: RateManagementTableProps) {
   const [rates] = useState<ExchangeRate[]>(mockRates);
 
   const handleAddNewRate = () => toast.info('Add new rate dialog will open');
@@ -29,7 +29,7 @@ export default function RateManagementTable({ onBack, onLogout }: RateManagement
   const handleDeleteRate = (id: string) => toast.error(`Rate ${id} deleted`);
 
   return (
-    <AppShell title="Exchange Rate Management" subtitle="Set and push rates to all branches" icon={<TrendingUp sx={{ fontSize: 18 }} />} userLabel="System Admin" userRole="Administrator" onBack={onBack} onLogout={onLogout}>
+    <AppShell title="Exchange Rate Management" subtitle="Set and push rates to all branches" icon={<TrendingUp sx={{ fontSize: 18 }} />} userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Staff'} onBack={onBack} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         <Box sx={{ maxWidth: 'var(--container-2xl)', mx: 'auto' }}>
