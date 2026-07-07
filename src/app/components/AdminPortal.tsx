@@ -102,13 +102,20 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
   const [branches, setBranches] = useState<Branch[]>(initBranches);
   const [floats, setFloats] = useState<CurrencyFloat[]>(initFloats);
   const [transactions, setTransactions] = useState<FlaggedTransaction[]>(initTransactions);
-  const [countries, setCountries] = useState<Country[]>(initCountries);
+  const [countries, setCountries] = useState<Country[]>(() => {
+    try {
+      const raw = localStorage.getItem('saucam_countries_v1');
+      if (raw) return JSON.parse(raw) as Country[];
+    } catch {}
+    return initCountries;
+  });
   const [resetRequests, setResetRequests] = useState<PasswordResetRequest[]>([]);
   const pendingFlags = transactions.filter((t) => t.status === 'Pending').length;
   const pendingResets = resetRequests.filter((r) => r.status === 'Pending').length;
 
-  // Persist users to localStorage whenever they change
+  // Persist users and countries to localStorage whenever they change
   useEffect(() => { persistUsers(users); }, [users]);
+  useEffect(() => { localStorage.setItem('saucam_countries_v1', JSON.stringify(countries)); }, [countries]);
 
   // Load reset requests from localStorage on mount and whenever the tab becomes visible
   useEffect(() => {
@@ -442,7 +449,7 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
     return ['All Branches', ...branches];
   };
   const save = () => {
-    if (!form.name || !form.username || !form.role || !form.country || !form.branch) return toast.error('Fill all required fields');
+    if (!form.name || !form.username || !form.role) return toast.error('Name, username and role are required');
     if (!editUser && !form.password) return toast.error('Password is required for new users');
     if (editUser) {
       setUsers(users.map((u) => u.id === editUser.id ? {
@@ -464,8 +471,8 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
         email: form.email || `${form.username}@saucam.com`,
         password: form.password,
         role: form.role as User['role'],
-        assignedCountry: form.country,
-        assignedBranch: form.branch,
+        assignedCountry: form.country || 'All Countries',
+        assignedBranch: form.branch || 'All Branches',
         lastActive: 'Never',
         status: 'Active',
       };
