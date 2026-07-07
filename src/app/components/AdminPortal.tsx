@@ -434,6 +434,7 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
   };
   const [modalOpen, setModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', role: '', country: '', branch: '' });
   const reset = () => { setForm({ name: '', username: '', email: '', password: '', role: '', country: '', branch: '' }); setEditUser(null); setShowPw(false); };
@@ -530,6 +531,7 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
                       <IconButton size="small" onClick={() => { setUsers(users.map((x) => x.id === u.id ? { ...x, status: x.status === 'Active' ? 'Disabled' : 'Active' } : x)); toast.info(`${u.name} ${u.status === 'Active' ? 'disabled' : 'activated'}`); }} style={{ color: u.status === 'Active' ? 'var(--color-danger)' : 'var(--color-accent)' }}>
                         {u.status === 'Active' ? <Block fontSize="small" /> : <CheckCircle fontSize="small" />}
                       </IconButton>
+                      <IconButton size="small" onClick={() => setDeleteConfirm(u)} style={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -586,6 +588,31 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
           </div>
         </div>
       )}
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} maxWidth="xs" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
+        <DialogTitle style={{ padding: 0 }}>
+          <div className="flex items-center gap-3 px-6 py-4" style={{ background: 'linear-gradient(135deg,#7f1d1d,#dc2626)' }}>
+            <Delete style={{ color: 'white' }} />
+            <span className="text-white font-bold text-base">Delete User</span>
+          </div>
+        </DialogTitle>
+        <DialogContent style={{ padding: '24px' }}>
+          <p className="m-0 text-sm" style={{ color: 'var(--color-text-1)' }}>
+            Are you sure you want to permanently delete <strong>{deleteConfirm?.name}</strong> (<span className="font-mono">{deleteConfirm?.username}</span>)?
+            This cannot be undone and they will lose login access immediately.
+          </p>
+        </DialogContent>
+        <DialogActions style={{ padding: '16px 24px 24px', gap: 12 }}>
+          <AppButton variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</AppButton>
+          <AppButton variant="danger" leftIcon={<Delete style={{ fontSize: 16 }} />} onClick={() => {
+            if (!deleteConfirm) return;
+            setUsers(users.filter((u) => u.id !== deleteConfirm.id));
+            toast.success(`${deleteConfirm.name} deleted`);
+            setDeleteConfirm(null);
+          }}>Delete Permanently</AppButton>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={modalOpen} onClose={() => { setModalOpen(false); reset(); }} maxWidth="sm" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
         <DialogTitle style={{ padding: 0 }}>
