@@ -4,18 +4,12 @@ import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from '@
 import { Person, Lock, Visibility, VisibilityOff, AdminPanelSettings, Email, Close, CheckCircle } from '@mui/icons-material';
 import AppButton from './ui/AppButton';
 import AppSpinner from './ui/AppSpinner';
+import { authenticateUser, getUsers } from '../userStore';
 
 interface LoginScreenProps {
   onLogin: (username: string, password: string, role: string) => void;
   onAdminPortal: () => void;
 }
-
-const mockUsers: Record<string, { password: string; role: string; email: string }> = {
-  'jessica.m': { password: 'teller123', role: 'Teller',             email: 'jessica.m@saucam.com' },
-  'emeka.o':   { password: 'teller123', role: 'Teller',             email: 'emeka.o@saucam.com' },
-  'mary.o':    { password: 'comply123', role: 'Compliance',         email: 'mary.o@saucam.com' },
-  'chioma.n':  { password: 'manage123', role: 'Manager',            email: 'chioma.n@saucam.com' },
-};
 
 const REMEMBER_KEY = 'saucam_remember_user';
 const RESET_REQUESTS_KEY = 'saucam_pw_reset_requests';
@@ -46,16 +40,24 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
     setError('');
     setLoading(true);
     await new Promise((r) => setTimeout(r, 600));
-    const user = mockUsers[username.toLowerCase()];
-    if (!user || user.password !== password) {
-      setError('Invalid username or password.');
+    const allUsers = (JSON.parse(localStorage.getItem('saucam_staff_users_v1') || '[]') as Array<{username:string;password:string;status:string}>);
+    const user = authenticateUser(username, password);
+    if (!user) {
+      const names = allUsers.map(u => u.username).join(', ') || 'none';
+      const usernameMatch = allUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
+      const msg = usernameMatch
+        ? `Wrong password for "${usernameMatch.username}". Stored: "${usernameMatch.password}"`
+        : `Username "${username}" not found. Stored users: ${names}`;
+      setError(msg);
       setLoading(false);
       return;
     }
     if (rememberMe) localStorage.setItem(REMEMBER_KEY, username);
     else localStorage.removeItem(REMEMBER_KEY);
     setLoading(false);
-    onLogin(username, password, user.role);
+    // Map role names to what App.tsx expects
+    const roleMap: Record<string, string> = { 'Branch Manager': 'Manager', 'Compliance Officer': 'Compliance' };
+    onLogin(username, password, roleMap[user.role] ?? user.role);
   };
 
   const handleForgotSubmit = async () => {
@@ -65,7 +67,9 @@ export default function LoginScreen({ onLogin, onAdminPortal }: LoginScreenProps
     if (!trimmed.endsWith('@saucam.com')) { setFpError('Please use your company email (e.g. name@saucam.com).'); return; }
 
     // Find matching staff account by email
-    const match = Object.entries(mockUsers).find(([, v]) => v.email === trimmed);
+    const allUsers = getUsers();
+    const matchUser = allUsers.find((u) => u.email === trimmed);
+    const match: [string, unknown] | undefined = matchUser ? [matchUser.username, matchUser] : undefined;
     if (!match) { setFpError('No staff account found with that email address.'); return; }
 
     setFpLoading(true);
