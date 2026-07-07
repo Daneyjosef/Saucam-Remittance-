@@ -452,8 +452,9 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
   const save = () => {
     if (!form.name || !form.username || !form.role) return toast.error('Name, username and role are required');
     if (!editUser && !form.password) return toast.error('Password is required for new users');
+    let updatedUsers: User[];
     if (editUser) {
-      setUsers(users.map((u) => u.id === editUser.id ? {
+      updatedUsers = users.map((u) => u.id === editUser.id ? {
         ...u,
         name: form.name,
         username: form.username,
@@ -462,13 +463,13 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
         assignedCountry: form.country,
         assignedBranch: form.branch,
         ...(form.password ? { password: form.password } : {}),
-      } : u));
+      } : u);
       toast.success('User updated');
     } else {
       const newUser: User = {
         id: `${Date.now()}`,
         name: form.name,
-        username: form.username,
+        username: form.username.toLowerCase().trim(),
         email: form.email || `${form.username}@saucam.com`,
         password: form.password,
         role: form.role as User['role'],
@@ -477,9 +478,12 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
         lastActive: 'Never',
         status: 'Active',
       };
-      setUsers([...users, newUser]);
-      toast.success(`${form.name} created — can now log in with username "${form.username}"`);
+      updatedUsers = [...users, newUser];
+      toast.success(`${form.name} created — login: "${newUser.username}" / "${form.password}"`);
     }
+    // Save immediately — don't rely on useEffect timing
+    setUsers(updatedUsers);
+    persistUsers(updatedUsers);
     setModalOpen(false); reset();
   };
   return (
@@ -528,7 +532,7 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
                   <TableCell className={tdCell} style={{ borderColor: 'var(--color-border)' }} align="center">
                     <div className="flex gap-1 justify-center">
                       <IconButton size="small" onClick={() => openEdit(u)} style={{ color: '#4f46e5' }}><Edit fontSize="small" /></IconButton>
-                      <IconButton size="small" onClick={() => { setUsers(users.map((x) => x.id === u.id ? { ...x, status: x.status === 'Active' ? 'Disabled' : 'Active' } : x)); toast.info(`${u.name} ${u.status === 'Active' ? 'disabled' : 'activated'}`); }} style={{ color: u.status === 'Active' ? 'var(--color-danger)' : 'var(--color-accent)' }}>
+                      <IconButton size="small" onClick={() => { const next = users.map((x) => x.id === u.id ? { ...x, status: x.status === 'Active' ? 'Disabled' as const : 'Active' as const } : x); setUsers(next); persistUsers(next); toast.info(`${u.name} ${u.status === 'Active' ? 'disabled' : 'activated'}`); }} style={{ color: u.status === 'Active' ? 'var(--color-danger)' : 'var(--color-accent)' }}>
                         {u.status === 'Active' ? <Block fontSize="small" /> : <CheckCircle fontSize="small" />}
                       </IconButton>
                       <IconButton size="small" onClick={() => setDeleteConfirm(u)} style={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
@@ -607,7 +611,8 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
           <AppButton variant="secondary" onClick={() => setDeleteConfirm(null)}>Cancel</AppButton>
           <AppButton variant="danger" leftIcon={<Delete style={{ fontSize: 16 }} />} onClick={() => {
             if (!deleteConfirm) return;
-            setUsers(users.filter((u) => u.id !== deleteConfirm.id));
+            const next = users.filter((u) => u.id !== deleteConfirm.id);
+            setUsers(next); persistUsers(next);
             toast.success(`${deleteConfirm.name} deleted`);
             setDeleteConfirm(null);
           }}>Delete Permanently</AppButton>
