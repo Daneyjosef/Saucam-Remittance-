@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Typography, Box, Paper, TextField, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -10,6 +10,9 @@ import { SwapHoriz, Send, GetApp, Person, Print, CheckCircle, PersonAdd } from '
 import AppShell from './AppShell';
 import AddCustomerModal, { NewCustomer } from './AddCustomerModal';
 import ReceiptModal from './ReceiptModal';
+import { toast, Toaster } from 'sonner';
+import { getRates } from '../rateStore';
+import { addTransaction, generateTxId, shouldFlag, getTransactions, type StoredTransaction } from '../transactionStore';
 
 interface Customer {
   id: string;
@@ -74,7 +77,7 @@ interface TransactionScreenProps { onLogout?: () => void; userName?: string; use
 export default function TransactionScreen({ onLogout, userName, userRoleLabel }: TransactionScreenProps) {
   const [selectedType, setSelectedType] = useState<string>('exchange');
   const [fromCurrency, setFromCurrency] = useState<string>('USD');
-  const [toCurrency, setToCurrency] = useState<string>('EUR');
+  const [toCurrency, setToCurrency] = useState<string>('NGN');
   const [amount, setAmount] = useState<string>('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [idNumber, setIdNumber] = useState<string>('');
@@ -82,8 +85,18 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
   const [customers, setCustomers] = useState<Customer[]>(mockCustomers);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<any>(null);
+  const [recentTxns, setRecentTxns] = useState<StoredTransaction[]>(() => getTransactions().slice(0, 20));
 
-  const getExchangeRate = () => {
+  useEffect(() => { setRecentTxns(getTransactions().slice(0, 20)); }, []);
+
+  const getExchangeRate = (): number => {
+    const rates = getRates();
+    const active = rates.filter(r => r.status === 'Active');
+    const direct = active.find(r => r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency);
+    if (direct) return direct.sellRate;
+    const inverse = active.find(r => r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency);
+    if (inverse) return parseFloat((1 / inverse.buyRate).toFixed(6));
+    // Fallback to mock
     const key = `${fromCurrency}-${toCurrency}`;
     return mockExchangeRates[key] || 1.0;
   };
@@ -100,19 +113,54 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
 
   const handleConfirmTransaction = () => {
     const numAmount = parseFloat(amount) || 0;
-    const total = parseFloat(calculateTotal());
+    if (!numAmount) { toast.error('Please enter an amount'); return; }
+    if (!selectedCustomer && !idNumber) { toast.error('Please select or add a customer'); return; }
+    const rate = getExchangeRate();
+    const total = numAmount * rate;
     const charges = numAmount * 0.005;
+    const now = new Date();
+    const txId = generateTxId();
+    const typeLabel = selectedType === 'exchange' ? 'Exchange' : selectedType === 'transfer' ? 'Transfer Out' : 'Remittance In';
+    const flagCheck = shouldFlag({ amountGiven: numAmount, fromCurrency } as StoredTransaction);
+
+    const tx: StoredTransaction = {
+      id: txId,
+      timestamp: now.toISOString(),
+      date: now.toISOString().slice(0, 10),
+      time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+      type: typeLabel as StoredTransaction['type'],
+      fromCurrency, toCurrency,
+      amountGiven: numAmount,
+      amountReceived: parseFloat(total.toFixed(2)),
+      rateUsed: rate,
+      customerName: selectedCustomer?.name || 'Walk-in Customer',
+      customerId: selectedCustomer?.idNumber || idNumber || 'WALK-IN',
+      tellerUsername: userName?.toLowerCase().replace(' ', '.') || 'teller',
+      tellerName: userName || 'Teller',
+      branch: 'Downtown Main Office',
+      status: flagCheck.flag ? 'Flagged' : 'Completed',
+      ...(flagCheck.flag ? { flagReason: flagCheck.reason, flagRisk: flagCheck.risk } : {}),
+    };
+    addTransaction(tx);
+    setRecentTxns(getTransactions().slice(0, 20));
+
+    if (flagCheck.flag) toast.warning(`Transaction flagged: ${flagCheck.reason}`, { duration: 5000 });
+    else toast.success(`Transaction ${txId} completed`);
+
     const receipt = {
-      transactionRef: `TXN-${Date.now().toString().slice(-8)}`,
+      transactionRef: txId,
       branchName: 'Downtown Main Office',
-      dateTime: new Date().toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      teller: 'Jessica Martinez',
+      dateTime: now.toLocaleString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      teller: userName || 'Teller',
       customerName: selectedCustomer?.name || 'Walk-in Customer',
       transactionType: selectedType === 'exchange' ? 'Currency Exchange' : selectedType === 'transfer' ? 'Outbound Transfer' : 'Inbound Remittance',
-      fromCurrency, fromAmount: numAmount, exchangeRate: getExchangeRate(), toCurrency, toAmount: total, charges, paymentMethod: 'Cash',
+      fromCurrency, fromAmount: numAmount, exchangeRate: rate, toCurrency, toAmount: parseFloat(total.toFixed(2)), charges, paymentMethod: 'Cash',
     };
     setReceiptData(receipt);
     setIsReceiptModalOpen(true);
+    setAmount('');
+    setSelectedCustomer(null);
+    setIdNumber('');
   };
 
   const handlePrintReceipt = () => { if (receiptData) setIsReceiptModalOpen(true); };
@@ -126,6 +174,7 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
 
   return (
     <AppShell title="Saucam Pro" subtitle="Downtown Main Office" userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Teller'} onLogout={onLogout}>
+      <Toaster position="top-right" richColors />
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Left Panel - Transaction Types */}
         <Paper sx={{
@@ -230,7 +279,11 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
                 </Box>
 
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--color-warning-subtle)', borderRadius: 1 }}>
-                  <Typography variant="caption">Rate updated: 14:35 UTC</Typography>
+                  <Typography variant="caption">
+                    {getRates().find(r => r.status === 'Active' && ((r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency) || (r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency)))?.lastUpdated
+                      ? `Rate set: ${getRates().find(r => r.status === 'Active' && ((r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency) || (r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency)))?.lastUpdated}`
+                      : 'Using fallback rate — manager should set rates'}
+                  </Typography>
                 </Box>
               </CardContent>
             </Card>
@@ -239,40 +292,47 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
           {/* Recent Transactions Table */}
           <Paper sx={{ p: { xs: 2, md: 3 } }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Recent Transactions</Typography>
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table sx={{ minWidth: 650 }}>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: 'var(--color-bg-subtle)' }}>
-                    <TableCell>Transaction ID</TableCell>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell>From</TableCell>
-                    <TableCell>To</TableCell>
-                    <TableCell align="right">Amount</TableCell>
-                    <TableCell>Customer</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {mockTransactions.map((txn) => (
-                    <TableRow key={txn.id} hover>
-                      <TableCell sx={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>{txn.id}</TableCell>
-                      <TableCell>{txn.time}</TableCell>
-                      <TableCell>{txn.type}</TableCell>
-                      <TableCell>{txn.fromCurrency}</TableCell>
-                      <TableCell>{txn.toCurrency}</TableCell>
-                      <TableCell align="right">{txn.amount.toLocaleString()}</TableCell>
-                      <TableCell>{txn.customer}</TableCell>
-                      <TableCell>
-                        <Box component="span" sx={{ px: 2, py: 0.5, borderRadius: 1, bgcolor: 'var(--color-success-bg)', color: 'var(--color-accent)', fontSize: 'var(--text-base)' }}>
-                          {txn.status}
-                        </Box>
-                      </TableCell>
+            {recentTxns.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>No transactions yet — complete one above to see it here.</Typography>
+            ) : (
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table sx={{ minWidth: 650 }}>
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'var(--color-bg-subtle)' }}>
+                      <TableCell>Transaction ID</TableCell>
+                      <TableCell>Time</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>From</TableCell>
+                      <TableCell>To</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell>Customer</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {recentTxns.map((txn) => (
+                      <TableRow key={txn.id} hover>
+                        <TableCell sx={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>{txn.id}</TableCell>
+                        <TableCell>{txn.time}</TableCell>
+                        <TableCell>{txn.type}</TableCell>
+                        <TableCell>{txn.fromCurrency}</TableCell>
+                        <TableCell>{txn.toCurrency}</TableCell>
+                        <TableCell align="right">{txn.amountGiven.toLocaleString()}</TableCell>
+                        <TableCell>{txn.customerName}</TableCell>
+                        <TableCell>
+                          <Box component="span" sx={{ px: 2, py: 0.5, borderRadius: 1,
+                            bgcolor: txn.status === 'Flagged' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
+                            color: txn.status === 'Flagged' ? 'var(--color-danger)' : 'var(--color-accent)',
+                            fontSize: 'var(--text-base)' }}>
+                            {txn.status}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
           </Paper>
         </Box>
       </Box>

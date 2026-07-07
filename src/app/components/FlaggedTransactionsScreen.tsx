@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Paper, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Button, Typography, Chip,
@@ -8,6 +8,7 @@ import {
 import { Flag, CheckCircle, Search, FileDownload, FilterList } from '@mui/icons-material';
 import AppShell from './AppShell';
 import { toast, Toaster } from 'sonner';
+import { getTransactions, persistTransactions, type StoredTransaction } from '../transactionStore';
 
 interface FlaggedTransaction {
   id: string; timestamp: string; branch: string; teller: string;
@@ -29,19 +30,42 @@ const branches = ['All Branches', 'Downtown Main Office', 'Victoria Island Branc
 interface FlaggedTransactionsScreenProps { onBack?: () => void; onLogout?: () => void; userName?: string; userRoleLabel?: string; }
 
 export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, userRoleLabel }: FlaggedTransactionsScreenProps) {
-  const [transactions, setTransactions] = useState<FlaggedTransaction[]>(mockTransactions);
+  const today = new Date().toISOString().slice(0, 10);
+  const [allTxns, setAllTxns] = useState<StoredTransaction[]>(() => getTransactions());
   const [selectedBranch, setSelectedBranch] = useState('All Branches');
-  const [dateFrom, setDateFrom] = useState('2026-06-03');
-  const [dateTo, setDateTo] = useState('2026-06-03');
+  const [dateFrom, setDateFrom] = useState(today);
+  const [dateTo, setDateTo] = useState(today);
   const [exportMenuAnchor, setExportMenuAnchor] = useState<null | HTMLElement>(null);
 
+  useEffect(() => { setAllTxns(getTransactions()); }, []);
+
+  // Include real flagged + mock flagged (for demo until real transactions come in)
+  const flaggedReal = allTxns.filter(t => t.status === 'Flagged' || t.status === 'Pending');
+  const transactions: FlaggedTransaction[] = flaggedReal.length > 0
+    ? flaggedReal.map(t => ({
+        id: t.id, timestamp: t.timestamp.replace('T', ' ').slice(0, 19),
+        branch: t.branch, teller: t.tellerName,
+        customerName: t.customerName, amount: t.amountGiven, currency: t.fromCurrency,
+        flagReason: t.flagReason || 'Manual flag', status: (t.status === 'Flagged' ? 'Pending' : t.status) as FlaggedTransaction['status'],
+        riskLevel: (t.flagRisk || 'Medium') as FlaggedTransaction['riskLevel'],
+      }))
+    : mockTransactions;
+
+  const setTransactionStatus = (id: string, status: FlaggedTransaction['status']) => {
+    const stored = getTransactions();
+    const storeStatus: StoredTransaction['status'] = status === 'Approved' ? 'Completed' : status === 'Under Investigation' ? 'Flagged' : 'Pending';
+    const updated = stored.map(t => t.id === id ? { ...t, status: storeStatus } : t);
+    persistTransactions(updated);
+    setAllTxns(updated);
+  };
+
   const handleApprove = (id: string) => {
-    setTransactions(transactions.map((txn) => txn.id === id ? { ...txn, status: 'Approved' as const } : txn));
+    setTransactionStatus(id, 'Approved');
     toast.success('Transaction approved', { description: `Transaction ${id} has been approved and cleared.` });
   };
 
   const handleInvestigate = (id: string) => {
-    setTransactions(transactions.map((txn) => txn.id === id ? { ...txn, status: 'Under Investigation' as const } : txn));
+    setTransactionStatus(id, 'Under Investigation');
     toast.info('Marked for investigation', { description: `Transaction ${id} has been flagged for detailed review.` });
   };
 
