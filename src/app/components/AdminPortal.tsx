@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { type PasswordResetRequest, RESET_REQUESTS_KEY } from './LoginScreen';
+import { type StaffUser, getUsers, persistUsers } from '../userStore';
 import {
   Avatar, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, Dialog,
@@ -10,7 +11,7 @@ import {
 import {
   Dashboard, People, AccountBalance, TrendingUp, Flag, Settings,
   Shield, Logout, PersonAdd, Edit, Block, CheckCircle, Close,
-  Lock, Person, Visibility, VisibilityOff, VpnKey,
+  Lock, Person, Email, Visibility, VisibilityOff, VpnKey,
   Add, Remove, CloudUpload, Delete, Calculate, Warning, Circle,
   FileDownload, FilterList, Search, Business, Notifications,
   ChevronLeft, ChevronRight, Assessment,
@@ -25,20 +26,13 @@ import AppBadge from './ui/AppBadge';
 import AppStatCard from './ui/AppStatCard';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-interface User { id: string; name: string; username: string; role: string; assignedBranch: string; lastActive: string; status: 'Active' | 'Disabled'; }
+type User = StaffUser;
 interface ExchangeRate { id: string; currencyPair: string; buyRate: number; sellRate: number; spread: number; lastUpdated: string; status: 'Active' | 'Inactive'; }
 interface Branch { id: string; name: string; location: string; manager: string; status: 'Online' | 'Offline'; float: 'Normal' | 'Low' | 'Unknown'; staff: number; }
 interface CurrencyFloat { code: string; name: string; flag: string; openingFloat: number; currentFloat: number; lowThreshold: number; physicalCount: string; }
 interface FlaggedTransaction { id: string; timestamp: string; branch: string; teller: string; customerName: string; amount: number; currency: string; flagReason: string; status: 'Pending' | 'Approved' | 'Under Investigation'; riskLevel: 'High' | 'Medium' | 'Low'; }
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────────
-const initUsers: User[] = [
-  { id: '1', name: 'Jessica Martinez', username: 'jessica.m', role: 'Teller', assignedBranch: 'Downtown Main Office', lastActive: '2 minutes ago', status: 'Active' },
-  { id: '2', name: 'Emeka Okonkwo', username: 'emeka.o', role: 'Teller', assignedBranch: 'Victoria Island Branch', lastActive: '15 minutes ago', status: 'Active' },
-  { id: '3', name: 'Mary Okafor', username: 'mary.o', role: 'Compliance Officer', assignedBranch: 'All Branches', lastActive: '1 hour ago', status: 'Active' },
-  { id: '4', name: 'Chioma Nwosu', username: 'chioma.n', role: 'Branch Manager', assignedBranch: 'Lekki Branch', lastActive: '3 hours ago', status: 'Active' },
-  { id: '5', name: 'Bolaji Adeyemi', username: 'bolaji.a', role: 'Teller', assignedBranch: 'Ikeja Branch', lastActive: '2 days ago', status: 'Disabled' },
-];
 const initRates: ExchangeRate[] = [
   { id: '1', currencyPair: 'NGN/USD', buyRate: 1445, sellRate: 1455, spread: 0.69, lastUpdated: '2026-06-30 14:35', status: 'Active' },
   { id: '2', currencyPair: 'USD/EUR', buyRate: 0.915, sellRate: 0.925, spread: 1.09, lastUpdated: '2026-06-30 14:30', status: 'Active' },
@@ -103,14 +97,18 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
   const [section, setSection] = useState<Section>('overview');
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [users, setUsers] = useState<User[]>(initUsers);
+  const [users, setUsers] = useState<User[]>(() => getUsers());
   const [rates, setRates] = useState<ExchangeRate[]>(initRates);
   const [branches, setBranches] = useState<Branch[]>(initBranches);
   const [floats, setFloats] = useState<CurrencyFloat[]>(initFloats);
   const [transactions, setTransactions] = useState<FlaggedTransaction[]>(initTransactions);
+  const [countries, setCountries] = useState<Country[]>(initCountries);
   const [resetRequests, setResetRequests] = useState<PasswordResetRequest[]>([]);
   const pendingFlags = transactions.filter((t) => t.status === 'Pending').length;
   const pendingResets = resetRequests.filter((r) => r.status === 'Pending').length;
+
+  // Persist users to localStorage whenever they change
+  useEffect(() => { persistUsers(users); }, [users]);
 
   // Load reset requests from localStorage on mount and whenever the tab becomes visible
   useEffect(() => {
@@ -312,8 +310,8 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
         {/* Content */}
         <div className="flex-1 overflow-auto p-3 md:p-6">
           {section === 'overview'   && <OverviewSection users={users} transactions={transactions} branches={branches} onNavigate={setSection} />}
-          {section === 'users'      && <UsersSection users={users} setUsers={setUsers} resetRequests={resetRequests} setResetRequests={setResetRequests} />}
-          {section === 'branches'   && <BranchesSection branches={branches} setBranches={setBranches} />}
+          {section === 'users'      && <UsersSection users={users} setUsers={setUsers} resetRequests={resetRequests} setResetRequests={setResetRequests} countries={countries} />}
+          {section === 'branches'   && <BranchesSection branches={branches} setBranches={setBranches} countries={countries} setCountries={setCountries} />}
           {section === 'rates'      && <RatesSection rates={rates} setRates={setRates} />}
           {section === 'float'      && <FloatSection floats={floats} setFloats={setFloats} />}
           {section === 'compliance' && <ComplianceSection transactions={transactions} setTransactions={setTransactions} />}
@@ -408,11 +406,12 @@ function OverviewSection({ users, transactions, branches, onNavigate }: { users:
 
 // ─── Users ──────────────────────────────────────────────────────────────────────
 
-function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
+function UsersSection({ users, setUsers, resetRequests, setResetRequests, countries }: {
   users: User[];
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   resetRequests: PasswordResetRequest[];
   setResetRequests: React.Dispatch<React.SetStateAction<PasswordResetRequest[]>>;
+  countries: Country[];
 }) {
   const resolveReset = (id: string) => {
     const updated = resetRequests.map((r) => r.id === id ? { ...r, status: 'Resolved' as const } : r);
@@ -429,18 +428,49 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
   const [modalOpen, setModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [showPw, setShowPw] = useState(false);
-  const [form, setForm] = useState({ name: '', username: '', password: '', role: '', branch: '' });
-  const reset = () => { setForm({ name: '', username: '', password: '', role: '', branch: '' }); setEditUser(null); setShowPw(false); };
-  const openEdit = (u: User) => { setEditUser(u); setForm({ name: u.name, username: u.username, password: '', role: u.role, branch: u.assignedBranch }); setModalOpen(true); };
+  const [form, setForm] = useState({ name: '', username: '', email: '', password: '', role: '', country: '', branch: '' });
+  const reset = () => { setForm({ name: '', username: '', email: '', password: '', role: '', country: '', branch: '' }); setEditUser(null); setShowPw(false); };
+  const openEdit = (u: User) => {
+    setEditUser(u);
+    setForm({ name: u.name, username: u.username, email: u.email, password: '', role: u.role, country: u.assignedCountry, branch: u.assignedBranch });
+    setModalOpen(true);
+  };
+  const countryBranches = (countryName: string): string[] => {
+    if (countryName === 'All Countries') return ['All Branches'];
+    const c = countries.find((x) => x.name === countryName);
+    const branches = c ? c.agents.map((a) => a.name) : [];
+    return ['All Branches', ...branches];
+  };
   const save = () => {
-    if (!form.name || !form.username || !form.role || !form.branch) return toast.error('Fill all required fields');
-    if (!editUser && !form.password) return toast.error('Password is required');
+    if (!form.name || !form.username || !form.role || !form.country || !form.branch) return toast.error('Fill all required fields');
+    if (!editUser && !form.password) return toast.error('Password is required for new users');
     if (editUser) {
-      setUsers(users.map((u) => u.id === editUser.id ? { ...u, name: form.name, username: form.username, role: form.role, assignedBranch: form.branch } : u));
+      setUsers(users.map((u) => u.id === editUser.id ? {
+        ...u,
+        name: form.name,
+        username: form.username,
+        email: form.email,
+        role: form.role as User['role'],
+        assignedCountry: form.country,
+        assignedBranch: form.branch,
+        ...(form.password ? { password: form.password } : {}),
+      } : u));
       toast.success('User updated');
     } else {
-      setUsers([...users, { id: `${Date.now()}`, name: form.name, username: form.username, role: form.role, assignedBranch: form.branch, lastActive: 'Never', status: 'Active' }]);
-      toast.success(`${form.name} created`);
+      const newUser: User = {
+        id: `${Date.now()}`,
+        name: form.name,
+        username: form.username,
+        email: form.email || `${form.username}@saucam.com`,
+        password: form.password,
+        role: form.role as User['role'],
+        assignedCountry: form.country,
+        assignedBranch: form.branch,
+        lastActive: 'Never',
+        status: 'Active',
+      };
+      setUsers([...users, newUser]);
+      toast.success(`${form.name} created — can now log in with username "${form.username}"`);
     }
     setModalOpen(false); reset();
   };
@@ -564,17 +594,21 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
           </div>
         </DialogTitle>
         <DialogContent style={{ padding: '24px' }}>
-          <div className="flex flex-col gap-5 mt-2">
-            {[
-              { label: 'Full Name', key: 'name', icon: <Person style={{ color: '#7c3aed', fontSize: 20 }} />, helper: undefined as string | undefined },
-              { label: 'Username', key: 'username', icon: <Person style={{ color: '#7c3aed', fontSize: 20 }} />, helper: 'e.g. john.doe — used to sign in' },
-            ].map((f) => (
-              <TextField key={f.key} fullWidth label={f.label} value={(form as Record<string, string>)[f.key]}
-                onChange={(e) => setForm({ ...form, [f.key]: f.key === 'username' ? e.target.value.toLowerCase().replace(/\s/g, '.') : e.target.value })}
-                required helperText={f.helper}
-                InputProps={{ startAdornment: <InputAdornment position="start">{f.icon}</InputAdornment> }}
-              />
-            ))}
+          <div className="flex flex-col gap-4 mt-2">
+            <TextField fullWidth label="Full Name" value={form.name} required
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Person style={{ color: '#7c3aed', fontSize: 20 }} /></InputAdornment> }}
+            />
+            <TextField fullWidth label="Username" value={form.username} required
+              helperText="e.g. john.doe — used to sign in"
+              onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/\s/g, '.') })}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Person style={{ color: '#7c3aed', fontSize: 20 }} /></InputAdornment> }}
+            />
+            <TextField fullWidth label="Email Address" value={form.email} type="email"
+              helperText="Leave blank to auto-generate @saucam.com"
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Email style={{ color: '#7c3aed', fontSize: 20 }} /></InputAdornment> }}
+            />
             <TextField fullWidth label={editUser ? 'New Password (blank to keep current)' : 'Password'} type={showPw ? 'text' : 'password'}
               value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editUser}
               InputProps={{
@@ -582,14 +616,32 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
                 endAdornment: <InputAdornment position="end"><IconButton onClick={() => setShowPw(!showPw)} size="small">{showPw ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}</IconButton></InputAdornment>,
               }}
             />
-            {[{ label: 'Role', key: 'role', options: roles }, { label: 'Assigned Branch', key: 'branch', options: branchNames }].map((f) => (
-              <FormControl key={f.key} fullWidth required>
-                <InputLabel>{f.label}</InputLabel>
-                <Select value={(form as Record<string, string>)[f.key]} label={f.label} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}>
-                  {f.options.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
-                </Select>
-              </FormControl>
-            ))}
+            <FormControl fullWidth required>
+              <InputLabel>Role</InputLabel>
+              <Select value={form.role} label="Role" onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                {roles.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth required>
+              <InputLabel>Assigned Country</InputLabel>
+              <Select value={form.country} label="Assigned Country" onChange={(e) => setForm({ ...form, country: e.target.value, branch: '' })}>
+                <MenuItem value="All Countries">All Countries</MenuItem>
+                {ALL_COUNTRIES.map((c) => (
+                  <MenuItem key={c.code} value={c.name}>
+                    <span className="flex items-center gap-2">
+                      <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} alt="" style={{ width: 20, height: 14, objectFit: 'cover', borderRadius: 2 }} />
+                      {c.name}
+                    </span>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth required>
+              <InputLabel>Assigned Branch / Agent</InputLabel>
+              <Select value={form.branch} label="Assigned Branch / Agent" onChange={(e) => setForm({ ...form, branch: e.target.value })} disabled={!form.country}>
+                {countryBranches(form.country).map((b) => <MenuItem key={b} value={b}>{b}</MenuItem>)}
+              </Select>
+            </FormControl>
           </div>
         </DialogContent>
         <DialogActions style={{ padding: '16px 24px 24px', gap: 12 }}>
@@ -662,8 +714,7 @@ const initCountries: Country[] = [
   },
 ];
 
-function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[]; setBranches: React.Dispatch<React.SetStateAction<Branch[]>> }) {
-  const [countries, setCountries] = useState<Country[]>(initCountries);
+function BranchesSection({ branches: _b, setBranches: _sb, countries, setCountries }: { branches: Branch[]; setBranches: React.Dispatch<React.SetStateAction<Branch[]>>; countries: Country[]; setCountries: React.Dispatch<React.SetStateAction<Country[]>> }) {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -726,7 +777,7 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
             <ChevronLeft style={{ fontSize: 18 }} /> All Countries
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-3xl">{live.flag}</span>
+            <img src={`https://flagcdn.com/w40/${live.code.toLowerCase()}.png`} alt={live.name} style={{ width: 40, height: 27, objectFit: 'cover', borderRadius: 4, boxShadow: '0 1px 4px rgba(0,0,0,0.15)' }} />
             <div>
               <h2 className="m-0 font-extrabold text-[#1e1b4b] text-xl leading-none">{live.name}</h2>
               <p className="m-0 mt-0.5 text-sm text-[var(--color-text-3)]">{live.agents.length} branch{live.agents.length !== 1 ? 'es' : ''} / agent{live.agents.length !== 1 ? 's' : ''}</p>
@@ -739,7 +790,7 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
 
         {live.agents.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="text-6xl mb-4">{live.flag}</span>
+            <img src={`https://flagcdn.com/w80/${live.code.toLowerCase()}.png`} alt={live.name} style={{ width: 80, height: 54, objectFit: 'cover', borderRadius: 8, marginBottom: 16, boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} />
             <div className="font-bold text-[#1e1b4b] text-lg mb-1">No branches or agents yet</div>
             <p className="text-sm text-[var(--color-text-3)] mb-4">Add your first branch or agent in {live.name}</p>
             <AppButton variant="primary" leftIcon={<Add style={{ fontSize: 18 }} />} onClick={openAddAgent}>Add Branch / Agent</AppButton>
@@ -783,7 +834,7 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
           <DialogTitle style={{ padding: 0 }}>
             <div className="flex items-center justify-between px-6 py-4" style={{ background: 'linear-gradient(135deg,#1e3a8a,#1e40af)' }}>
               <div className="flex items-center gap-2">
-                <span className="text-2xl">{live.flag}</span>
+                <img src={`https://flagcdn.com/w20/${live.code.toLowerCase()}.png`} alt={live.name} style={{ width: 28, height: 19, objectFit: 'cover', borderRadius: 3 }} />
                 <div>
                   <div className="text-white font-bold text-base leading-none">{editAgent ? 'Edit' : 'Add'} Branch / Agent</div>
                   <div className="text-white/70 text-xs mt-0.5">{live.name}</div>
@@ -846,7 +897,7 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
                 style={{ borderColor: 'var(--color-primary-subtle)', boxShadow: 'var(--shadow-sm)' }}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-3xl">{c.flag}</span>
+                  <img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt={c.name} style={{ width: 36, height: 24, objectFit: 'cover', borderRadius: 4, flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.12)' }} />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-[#1e1b4b] truncate">{c.name}</div>
                     <div className="text-xs text-[var(--color-text-3)]">{c.code}</div>
@@ -894,7 +945,7 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
                 className="flex items-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] border cursor-pointer transition-all duration-150 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]"
                 style={{ borderColor: count > 0 ? 'var(--color-primary-subtle)' : 'var(--color-border)', background: count > 0 ? 'var(--color-primary-subtle)' : 'white' }}
               >
-                <span className="text-xl flex-shrink-0">{c.flag}</span>
+                <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} alt={c.name} style={{ width: 24, height: 16, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }} />
                 <div className="min-w-0">
                   <div className="text-xs font-semibold truncate" style={{ color: count > 0 ? 'var(--color-primary)' : 'var(--color-text-1)' }}>{c.name}</div>
                   {count > 0 && <div className="text-[10px]" style={{ color: 'var(--color-accent)' }}>{count} set up</div>}
@@ -919,7 +970,12 @@ function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[
               <InputLabel>Select Country</InputLabel>
               <Select value={selectedNewCountry} label="Select Country" onChange={(e) => setSelectedNewCountry(e.target.value)}>
                 {ALL_COUNTRIES.filter((c) => !countries.find((x) => x.code === c.code)).map((c) => (
-                  <MenuItem key={c.code} value={c.code}>{c.flag} {c.name}</MenuItem>
+                  <MenuItem key={c.code} value={c.code}>
+                    <span className="flex items-center gap-2">
+                      <img src={`https://flagcdn.com/w20/${c.code.toLowerCase()}.png`} alt="" style={{ width: 20, height: 14, objectFit: 'cover', borderRadius: 2 }} />
+                      {c.name}
+                    </span>
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
