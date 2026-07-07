@@ -126,7 +126,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
   const navItems: NavItem[] = [
     { id: 'overview',   label: 'Overview',          icon: <Dashboard /> },
     { id: 'users',      label: 'User Management',   icon: <People /> },
-    { id: 'branches',   label: 'Branch Management', icon: <Business /> },
+    { id: 'branches',   label: 'Countries & Agents', icon: <Business /> },
     { id: 'rates',      label: 'Exchange Rates',    icon: <TrendingUp /> },
     { id: 'float',      label: 'Cash Float',        icon: <AccountBalance /> },
     { id: 'compliance', label: 'Compliance',        icon: <Flag />, badge: pendingFlags },
@@ -601,77 +601,333 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests }: {
   );
 }
 
-// ─── Branches ───────────────────────────────────────────────────────────────────
+// ─── Countries & Agents ─────────────────────────────────────────────────────────
 
-function BranchesSection({ branches, setBranches }: { branches: Branch[]; setBranches: React.Dispatch<React.SetStateAction<Branch[]>> }) {
+interface Agent { id: string; name: string; type: 'Branch' | 'Agent'; address: string; manager: string; status: 'Active' | 'Inactive'; float: 'Normal' | 'Low' | 'Unknown'; staff: number; }
+interface Country { code: string; name: string; flag: string; agents: Agent[]; }
+
+const ALL_COUNTRIES: { code: string; name: string; flag: string }[] = [
+  { code: 'NG', name: 'Nigeria', flag: '🇳🇬' }, { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'US', name: 'United States', flag: '🇺🇸' }, { code: 'CA', name: 'Canada', flag: '🇨🇦' },
+  { code: 'DE', name: 'Germany', flag: '🇩🇪' }, { code: 'FR', name: 'France', flag: '🇫🇷' },
+  { code: 'IT', name: 'Italy', flag: '🇮🇹' }, { code: 'ES', name: 'Spain', flag: '🇪🇸' },
+  { code: 'NL', name: 'Netherlands', flag: '🇳🇱' }, { code: 'BE', name: 'Belgium', flag: '🇧🇪' },
+  { code: 'CH', name: 'Switzerland', flag: '🇨🇭' }, { code: 'SE', name: 'Sweden', flag: '🇸🇪' },
+  { code: 'NO', name: 'Norway', flag: '🇳🇴' }, { code: 'DK', name: 'Denmark', flag: '🇩🇰' },
+  { code: 'FI', name: 'Finland', flag: '🇫🇮' }, { code: 'PL', name: 'Poland', flag: '🇵🇱' },
+  { code: 'PT', name: 'Portugal', flag: '🇵🇹' }, { code: 'IE', name: 'Ireland', flag: '🇮🇪' },
+  { code: 'AU', name: 'Australia', flag: '🇦🇺' }, { code: 'NZ', name: 'New Zealand', flag: '🇳🇿' },
+  { code: 'JP', name: 'Japan', flag: '🇯🇵' }, { code: 'CN', name: 'China', flag: '🇨🇳' },
+  { code: 'IN', name: 'India', flag: '🇮🇳' }, { code: 'SG', name: 'Singapore', flag: '🇸🇬' },
+  { code: 'HK', name: 'Hong Kong', flag: '🇭🇰' }, { code: 'MY', name: 'Malaysia', flag: '🇲🇾' },
+  { code: 'AE', name: 'United Arab Emirates', flag: '🇦🇪' }, { code: 'SA', name: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: 'QA', name: 'Qatar', flag: '🇶🇦' }, { code: 'KW', name: 'Kuwait', flag: '🇰🇼' },
+  { code: 'ZA', name: 'South Africa', flag: '🇿🇦' }, { code: 'GH', name: 'Ghana', flag: '🇬🇭' },
+  { code: 'KE', name: 'Kenya', flag: '🇰🇪' }, { code: 'ET', name: 'Ethiopia', flag: '🇪🇹' },
+  { code: 'TZ', name: 'Tanzania', flag: '🇹🇿' }, { code: 'UG', name: 'Uganda', flag: '🇺🇬' },
+  { code: 'SN', name: 'Senegal', flag: '🇸🇳' }, { code: 'CI', name: "Côte d'Ivoire", flag: '🇨🇮' },
+  { code: 'CM', name: 'Cameroon', flag: '🇨🇲' }, { code: 'BJ', name: 'Benin', flag: '🇧🇯' },
+  { code: 'TG', name: 'Togo', flag: '🇹🇬' }, { code: 'NE', name: 'Niger', flag: '🇳🇪' },
+  { code: 'ML', name: 'Mali', flag: '🇲🇱' }, { code: 'BF', name: 'Burkina Faso', flag: '🇧🇫' },
+  { code: 'BR', name: 'Brazil', flag: '🇧🇷' }, { code: 'MX', name: 'Mexico', flag: '🇲🇽' },
+  { code: 'AR', name: 'Argentina', flag: '🇦🇷' }, { code: 'CO', name: 'Colombia', flag: '🇨🇴' },
+  { code: 'CL', name: 'Chile', flag: '🇨🇱' }, { code: 'PE', name: 'Peru', flag: '🇵🇪' },
+  { code: 'KR', name: 'South Korea', flag: '🇰🇷' }, { code: 'PH', name: 'Philippines', flag: '🇵🇭' },
+  { code: 'ID', name: 'Indonesia', flag: '🇮🇩' }, { code: 'TH', name: 'Thailand', flag: '🇹🇭' },
+  { code: 'VN', name: 'Vietnam', flag: '🇻🇳' }, { code: 'PK', name: 'Pakistan', flag: '🇵🇰' },
+  { code: 'BD', name: 'Bangladesh', flag: '🇧🇩' }, { code: 'LK', name: 'Sri Lanka', flag: '🇱🇰' },
+  { code: 'NP', name: 'Nepal', flag: '🇳🇵' }, { code: 'EG', name: 'Egypt', flag: '🇪🇬' },
+  { code: 'MA', name: 'Morocco', flag: '🇲🇦' }, { code: 'DZ', name: 'Algeria', flag: '🇩🇿' },
+  { code: 'TN', name: 'Tunisia', flag: '🇹🇳' }, { code: 'LY', name: 'Libya', flag: '🇱🇾' },
+  { code: 'RU', name: 'Russia', flag: '🇷🇺' }, { code: 'UA', name: 'Ukraine', flag: '🇺🇦' },
+  { code: 'TR', name: 'Turkey', flag: '🇹🇷' }, { code: 'GR', name: 'Greece', flag: '🇬🇷' },
+  { code: 'AT', name: 'Austria', flag: '🇦🇹' }, { code: 'CZ', name: 'Czech Republic', flag: '🇨🇿' },
+  { code: 'HU', name: 'Hungary', flag: '🇭🇺' }, { code: 'RO', name: 'Romania', flag: '🇷🇴' },
+];
+
+const initCountries: Country[] = [
+  {
+    code: 'NG', name: 'Nigeria', flag: '🇳🇬',
+    agents: [
+      { id: 'ng1', name: 'Downtown Main Office', type: 'Branch', address: 'Lagos Island, Lagos', manager: 'Adebayo Tunde', status: 'Active', float: 'Normal', staff: 8 },
+      { id: 'ng2', name: 'Victoria Island Branch', type: 'Branch', address: 'Adeola Odeku St, VI', manager: 'Ngozi Eze', status: 'Active', float: 'Normal', staff: 6 },
+      { id: 'ng3', name: 'Lekki Branch', type: 'Branch', address: 'Admiralty Way, Lekki', manager: 'Chioma Nwosu', status: 'Active', float: 'Low', staff: 5 },
+    ],
+  },
+  {
+    code: 'GB', name: 'United Kingdom', flag: '🇬🇧',
+    agents: [
+      { id: 'gb1', name: 'London Agent', type: 'Agent', address: 'Peckham High St, London SE15', manager: 'Taiwo Adeleke', status: 'Active', float: 'Normal', staff: 3 },
+    ],
+  },
+];
+
+function BranchesSection({ branches: _b, setBranches: _sb }: { branches: Branch[]; setBranches: React.Dispatch<React.SetStateAction<Branch[]>> }) {
+  const [countries, setCountries] = useState<Country[]>(initCountries);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [editBranch, setEditBranch] = useState<Branch | null>(null);
-  const [form, setForm] = useState({ name: '', location: '', manager: '' });
-  const reset = () => { setForm({ name: '', location: '', manager: '' }); setEditBranch(null); };
-  const save = () => {
-    if (!form.name || !form.location) return toast.error('Fill all required fields');
-    if (editBranch) {
-      setBranches(branches.map((b) => b.id === editBranch.id ? { ...b, ...form } : b));
-      toast.success('Branch updated');
+  const [editAgent, setEditAgent] = useState<Agent | null>(null);
+  const [addCountryOpen, setAddCountryOpen] = useState(false);
+  const [selectedNewCountry, setSelectedNewCountry] = useState('');
+  const [form, setForm] = useState({ name: '', type: 'Branch' as 'Branch' | 'Agent', address: '', manager: '' });
+  const resetForm = () => { setForm({ name: '', type: 'Branch', address: '', manager: '' }); setEditAgent(null); };
+
+  const filteredCountries = ALL_COUNTRIES.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase())
+  );
+  const activeCountries = countries.filter((c) => c.agents.length > 0);
+  const totalAgents = countries.reduce((s, c) => s + c.agents.length, 0);
+
+  const openAddAgent = () => { resetForm(); setModalOpen(true); };
+  const openEditAgent = (a: Agent) => { setEditAgent(a); setForm({ name: a.name, type: a.type, address: a.address, manager: a.manager }); setModalOpen(true); };
+
+  const saveAgent = () => {
+    if (!form.name || !form.address) return toast.error('Fill all required fields');
+    if (!selectedCountry) return;
+    if (editAgent) {
+      setCountries(countries.map((c) => c.code === selectedCountry.code
+        ? { ...c, agents: c.agents.map((a) => a.id === editAgent.id ? { ...a, ...form } : a) }
+        : c));
+      setSelectedCountry((prev) => prev ? { ...prev, agents: prev.agents.map((a) => a.id === editAgent!.id ? { ...a, ...form } : a) } : prev);
+      toast.success('Updated successfully');
     } else {
-      setBranches([...branches, { id: `${Date.now()}`, ...form, manager: form.manager || 'Unassigned', status: 'Offline', float: 'Unknown', staff: 0 }]);
-      toast.success('Branch created');
+      const newAgent: Agent = { id: `${Date.now()}`, ...form, status: 'Active', float: 'Unknown', staff: 0 };
+      setCountries(countries.map((c) => c.code === selectedCountry.code ? { ...c, agents: [...c.agents, newAgent] } : c));
+      setSelectedCountry((prev) => prev ? { ...prev, agents: [...prev.agents, newAgent] } : prev);
+      toast.success(`${form.type} added to ${selectedCountry.name}`);
     }
-    setModalOpen(false); reset();
+    setModalOpen(false); resetForm();
   };
+
+  const deleteAgent = (agentId: string) => {
+    if (!selectedCountry) return;
+    setCountries(countries.map((c) => c.code === selectedCountry.code ? { ...c, agents: c.agents.filter((a) => a.id !== agentId) } : c));
+    setSelectedCountry((prev) => prev ? { ...prev, agents: prev.agents.filter((a) => a.id !== agentId) } : prev);
+    toast.info('Removed');
+  };
+
+  const addCountry = () => {
+    if (!selectedNewCountry) return toast.error('Select a country');
+    if (countries.find((c) => c.code === selectedNewCountry)) return toast.error('Country already added');
+    const meta = ALL_COUNTRIES.find((c) => c.code === selectedNewCountry)!;
+    setCountries([...countries, { ...meta, agents: [] }]);
+    toast.success(`${meta.name} added`);
+    setAddCountryOpen(false); setSelectedNewCountry('');
+  };
+
+  // ── Country detail view ──
+  if (selectedCountry) {
+    const live = countries.find((c) => c.code === selectedCountry.code) ?? selectedCountry;
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <button onClick={() => setSelectedCountry(null)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-md)] border bg-white cursor-pointer text-sm font-semibold transition-all hover:-translate-x-0.5" style={{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }}>
+            <ChevronLeft style={{ fontSize: 18 }} /> All Countries
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">{live.flag}</span>
+            <div>
+              <h2 className="m-0 font-extrabold text-[#1e1b4b] text-xl leading-none">{live.name}</h2>
+              <p className="m-0 mt-0.5 text-sm text-[var(--color-text-3)]">{live.agents.length} branch{live.agents.length !== 1 ? 'es' : ''} / agent{live.agents.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <div className="ml-auto">
+            <AppButton variant="primary" leftIcon={<Add style={{ fontSize: 18 }} />} onClick={openAddAgent}>Add Branch / Agent</AppButton>
+          </div>
+        </div>
+
+        {live.agents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <span className="text-6xl mb-4">{live.flag}</span>
+            <div className="font-bold text-[#1e1b4b] text-lg mb-1">No branches or agents yet</div>
+            <p className="text-sm text-[var(--color-text-3)] mb-4">Add your first branch or agent in {live.name}</p>
+            <AppButton variant="primary" leftIcon={<Add style={{ fontSize: 18 }} />} onClick={openAddAgent}>Add Branch / Agent</AppButton>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {live.agents.map((a) => (
+              <div key={a.id} className="bg-white rounded-[var(--radius-lg)] border p-5 transition-all duration-200 hover:-translate-y-0.5" style={{ borderColor: a.status === 'Active' ? 'var(--color-success-border)' : 'var(--color-danger-border)' }}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: a.type === 'Branch' ? 'var(--color-primary-subtle)' : 'var(--color-admin-subtle)' }}>
+                      <Business style={{ fontSize: 20, color: a.type === 'Branch' ? 'var(--color-primary)' : 'var(--color-admin)' }} />
+                    </div>
+                    <div>
+                      <div className="font-bold text-[#1e1b4b] text-sm leading-snug">{a.name}</div>
+                      <div className="text-xs text-[var(--color-text-3)] mt-0.5">{a.address}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-0.5 flex-shrink-0">
+                    <IconButton size="small" onClick={() => openEditAgent(a)} style={{ color: '#4f46e5' }}><Edit fontSize="small" /></IconButton>
+                    <IconButton size="small" onClick={() => deleteAgent(a.id)} style={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <AppBadge variant={a.type === 'Branch' ? 'primary' : 'admin'} size="sm">{a.type}</AppBadge>
+                  <AppBadge variant={a.status === 'Active' ? 'success' : 'danger'} dot size="sm">{a.status}</AppBadge>
+                  {a.float === 'Low' && <AppBadge variant="warning" size="sm">Low Float</AppBadge>}
+                </div>
+                <Divider style={{ margin: '10px 0' }} />
+                <div className="flex justify-between text-sm">
+                  <div><div className="text-xs text-[var(--color-text-3)]">Manager</div><div className="font-semibold">{a.manager || 'Unassigned'}</div></div>
+                  <div className="text-right"><div className="text-xs text-[var(--color-text-3)]">Staff</div><div className="font-semibold">{a.staff} members</div></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add/Edit Agent Modal */}
+        <Dialog open={modalOpen} onClose={() => { setModalOpen(false); resetForm(); }} maxWidth="sm" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
+          <DialogTitle style={{ padding: 0 }}>
+            <div className="flex items-center justify-between px-6 py-4" style={{ background: 'linear-gradient(135deg,#1e3a8a,#1e40af)' }}>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">{live.flag}</span>
+                <div>
+                  <div className="text-white font-bold text-base leading-none">{editAgent ? 'Edit' : 'Add'} Branch / Agent</div>
+                  <div className="text-white/70 text-xs mt-0.5">{live.name}</div>
+                </div>
+              </div>
+              <IconButton onClick={() => { setModalOpen(false); resetForm(); }} style={{ color: 'white' }}><Close /></IconButton>
+            </div>
+          </DialogTitle>
+          <DialogContent style={{ padding: '24px' }}>
+            <div className="flex flex-col gap-4 mt-2">
+              <FormControl fullWidth required>
+                <InputLabel>Type</InputLabel>
+                <Select value={form.type} label="Type" onChange={(e) => setForm({ ...form, type: e.target.value as 'Branch' | 'Agent' })}>
+                  <MenuItem value="Branch">Branch</MenuItem>
+                  <MenuItem value="Agent">Agent</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField fullWidth required label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. London Peckham Branch" />
+              <TextField fullWidth required label="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Full street address" />
+              <TextField fullWidth label="Manager (optional)" value={form.manager} onChange={(e) => setForm({ ...form, manager: e.target.value })} />
+            </div>
+          </DialogContent>
+          <DialogActions style={{ padding: '16px 24px 24px', gap: 10 }}>
+            <AppButton variant="secondary" onClick={() => { setModalOpen(false); resetForm(); }}>Cancel</AppButton>
+            <AppButton variant="primary" onClick={saveAgent}>{editAgent ? 'Save Changes' : `Add ${form.type}`}</AppButton>
+          </DialogActions>
+        </Dialog>
+      </div>
+    );
+  }
+
+  // ── Countries list view ──
   return (
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <h2 className="m-0 font-extrabold text-[#1e1b4b] text-xl">Branch Management</h2>
-          <p className="m-0 mt-0.5 text-sm text-[var(--color-text-3)]">Manage all company branch locations</p>
+          <h2 className="m-0 font-extrabold text-[#1e1b4b] text-xl">Countries & Agents</h2>
+          <p className="m-0 mt-0.5 text-sm text-[var(--color-text-3)]">Manage branches and agents by country</p>
         </div>
-        <AppButton variant="primary" leftIcon={<Add style={{ fontSize: 18 }} />} onClick={() => { reset(); setModalOpen(true); }}>Add Branch</AppButton>
+        <AppButton variant="primary" leftIcon={<Add style={{ fontSize: 18 }} />} onClick={() => setAddCountryOpen(true)}>Add Country</AppButton>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {branches.map((b) => (
-          <div key={b.id} className="bg-white rounded-[var(--radius-lg)] border p-5 transition-all duration-200 hover:-translate-y-0.5" style={{ borderColor: b.status === 'Online' ? 'var(--color-success-border)' : 'var(--color-danger-border)' }}>
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: b.status === 'Online' ? 'var(--color-success-bg)' : 'var(--color-danger-bg)' }}>
-                  <Business style={{ color: b.status === 'Online' ? 'var(--color-accent)' : 'var(--color-danger)', fontSize: 22 }} />
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <AppStatCard label="Active Countries" value={activeCountries.length} color="primary" delay={0} />
+        <AppStatCard label="Total Branches/Agents" value={totalAgents} color="accent" delay={0.06} />
+        <AppStatCard label="Countries Available" value={ALL_COUNTRIES.length} color="admin" delay={0.12} />
+      </div>
+
+      {/* Active countries with agents */}
+      {activeCountries.length > 0 && (
+        <div className="mb-8">
+          <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-3)' }}>Active Countries ({activeCountries.length})</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeCountries.map((c) => (
+              <div
+                key={c.code}
+                onClick={() => setSelectedCountry(c)}
+                className="bg-white rounded-[var(--radius-lg)] border p-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                style={{ borderColor: 'var(--color-primary-subtle)', boxShadow: 'var(--shadow-sm)' }}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">{c.flag}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[#1e1b4b] truncate">{c.name}</div>
+                    <div className="text-xs text-[var(--color-text-3)]">{c.code}</div>
+                  </div>
+                  <ChevronRight style={{ fontSize: 18, color: 'var(--color-text-4)' }} />
                 </div>
-                <div>
-                  <div className="font-bold text-[#1e1b4b] text-sm leading-snug">{b.name}</div>
-                  <div className="text-xs text-[var(--color-text-3)]">{b.location}</div>
+                <div className="flex gap-2 flex-wrap">
+                  <AppBadge variant="success" dot size="sm">{c.agents.length} location{c.agents.length !== 1 ? 's' : ''}</AppBadge>
+                  <AppBadge variant="primary" size="sm">{c.agents.filter((a) => a.type === 'Branch').length} branch{c.agents.filter((a) => a.type === 'Branch').length !== 1 ? 'es' : ''}</AppBadge>
+                  {c.agents.filter((a) => a.type === 'Agent').length > 0 && <AppBadge variant="admin" size="sm">{c.agents.filter((a) => a.type === 'Agent').length} agent{c.agents.filter((a) => a.type === 'Agent').length !== 1 ? 's' : ''}</AppBadge>}
                 </div>
               </div>
-              <IconButton size="small" onClick={() => { setEditBranch(b); setForm({ name: b.name, location: b.location, manager: b.manager }); setModalOpen(true); }} style={{ color: '#4f46e5' }}><Edit fontSize="small" /></IconButton>
-            </div>
-            <div className="flex gap-2 flex-wrap mb-4">
-              <AppBadge variant={b.status === 'Online' ? 'success' : 'danger'} dot size="sm">{b.status}</AppBadge>
-              <AppBadge variant={b.float === 'Low' ? 'danger' : b.float === 'Normal' ? 'success' : 'neutral'} size="sm">Float: {b.float}</AppBadge>
-            </div>
-            <Divider style={{ margin: '12px 0' }} />
-            <div className="flex justify-between">
-              <div><div className="text-xs text-[var(--color-text-3)]">Manager</div><div className="text-sm font-semibold">{b.manager}</div></div>
-              <div className="text-right"><div className="text-xs text-[var(--color-text-3)]">Staff</div><div className="text-sm font-semibold">{b.staff} members</div></div>
-            </div>
+            ))}
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* All countries searchable list */}
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--color-text-3)' }}>All Countries — Click to Set Up</div>
+        <div className="relative mb-4">
+          <span className="pointer-events-none" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', zIndex: 1 }}>
+            <Search style={{ fontSize: 18, color: 'var(--color-text-4)' }} />
+          </span>
+          <input
+            type="text"
+            placeholder="Search countries…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-base w-full"
+            style={{ paddingLeft: 40 }}
+          />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          {filteredCountries.map((c) => {
+            const existing = countries.find((x) => x.code === c.code);
+            const count = existing?.agents.length ?? 0;
+            return (
+              <div
+                key={c.code}
+                onClick={() => {
+                  if (existing) { setSelectedCountry(existing); }
+                  else { setCountries([...countries, { ...c, agents: [] }]); setSelectedCountry({ ...c, agents: [] }); }
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] border cursor-pointer transition-all duration-150 hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-subtle)]"
+                style={{ borderColor: count > 0 ? 'var(--color-primary-subtle)' : 'var(--color-border)', background: count > 0 ? 'var(--color-primary-subtle)' : 'white' }}
+              >
+                <span className="text-xl flex-shrink-0">{c.flag}</span>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold truncate" style={{ color: count > 0 ? 'var(--color-primary)' : 'var(--color-text-1)' }}>{c.name}</div>
+                  {count > 0 && <div className="text-[10px]" style={{ color: 'var(--color-accent)' }}>{count} set up</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <Dialog open={modalOpen} onClose={() => { setModalOpen(false); reset(); }} maxWidth="sm" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
+
+      {/* Add Country Modal */}
+      <Dialog open={addCountryOpen} onClose={() => setAddCountryOpen(false)} maxWidth="xs" fullWidth PaperProps={{ style: { borderRadius: 'var(--radius-xl)', overflow: 'hidden' } }}>
         <DialogTitle style={{ padding: 0 }}>
-          <div className="flex items-center justify-between px-6 py-4" style={{ background: 'linear-gradient(135deg,#0369a1,#0284c7)' }}>
-            <div className="flex items-center gap-2"><Business style={{ color: 'white' }} /><span className="text-white font-bold text-base">{editBranch ? 'Edit Branch' : 'Add New Branch'}</span></div>
-            <IconButton onClick={() => { setModalOpen(false); reset(); }} style={{ color: 'white' }}><Close /></IconButton>
+          <div className="flex items-center justify-between px-6 py-4" style={{ background: 'linear-gradient(135deg,#1e3a8a,#1e40af)' }}>
+            <div className="flex items-center gap-2"><Business style={{ color: 'white' }} /><span className="text-white font-bold text-base">Add Country</span></div>
+            <IconButton onClick={() => setAddCountryOpen(false)} style={{ color: 'white' }}><Close /></IconButton>
           </div>
         </DialogTitle>
         <DialogContent style={{ padding: '24px' }}>
-          <div className="flex flex-col gap-5 mt-2">
-            {[{ label: 'Branch Name', key: 'name', required: true }, { label: 'Location / Address', key: 'location', required: true }, { label: 'Branch Manager (optional)', key: 'manager', required: false }].map((f) => (
-              <TextField key={f.key} fullWidth label={f.label} value={(form as Record<string, string>)[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required} />
-            ))}
+          <div className="mt-2">
+            <FormControl fullWidth required>
+              <InputLabel>Select Country</InputLabel>
+              <Select value={selectedNewCountry} label="Select Country" onChange={(e) => setSelectedNewCountry(e.target.value)}>
+                {ALL_COUNTRIES.filter((c) => !countries.find((x) => x.code === c.code)).map((c) => (
+                  <MenuItem key={c.code} value={c.code}>{c.flag} {c.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </div>
         </DialogContent>
-        <DialogActions style={{ padding: '16px 24px 24px', gap: 12 }}>
-          <AppButton variant="secondary" onClick={() => { setModalOpen(false); reset(); }}>Cancel</AppButton>
-          <AppButton variant="primary" onClick={save}>{editBranch ? 'Save Changes' : 'Create Branch'}</AppButton>
+        <DialogActions style={{ padding: '16px 24px 24px', gap: 10 }}>
+          <AppButton variant="secondary" onClick={() => setAddCountryOpen(false)}>Cancel</AppButton>
+          <AppButton variant="primary" onClick={addCountry}>Add Country</AppButton>
         </DialogActions>
       </Dialog>
     </div>
