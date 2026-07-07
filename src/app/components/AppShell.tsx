@@ -39,10 +39,8 @@ export default function AppShell({
         className="sticky top-0 flex items-center gap-3 px-4 md:px-8 py-3 border-b border-white/14"
         style={{
           zIndex: 'var(--z-sticky)',
-          background: `${accent}f5`,
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          boxShadow: '0 2px 20px rgba(0,0,0,0.2)',
+          background: accent,
+          boxShadow: '0 2px 12px rgba(0,0,0,0.18)',
         }}
       >
         {/* Back */}
