@@ -172,31 +172,40 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
     setIdNumber(customer.idNumber);
   };
 
+  const txTypes = [
+    { type: 'exchange',   icon: <SwapHoriz fontSize="small" />, label: 'Exchange' },
+    { type: 'transfer',   icon: <Send fontSize="small" />,      label: 'Transfer Out' },
+    { type: 'remittance', icon: <GetApp fontSize="small" />,    label: 'Remittance In' },
+  ];
+
+  const rateInfo = getRates().find(r => r.status === 'Active' && (
+    (r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency) ||
+    (r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency)
+  ));
+
   return (
     <AppShell title="Saucam Pro" subtitle="Downtown Main Office" userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Teller'} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
-        {/* Left Panel - Transaction Types */}
+
+        {/* ── Desktop sidebar ── */}
         <Paper sx={{
-          width: { xs: '100%', md: 280 },
-          borderRadius: 0,
+          display: { xs: 'none', md: 'block' },
+          width: 260, borderRadius: 0, flexShrink: 0,
           bgcolor: 'var(--color-surface)',
-          borderRight: { xs: 'none', md: '1px solid var(--color-border)' },
-          borderBottom: { xs: '1px solid var(--color-border)', md: 'none' },
+          borderRight: '1px solid var(--color-border)',
         }}>
           <Box sx={{ p: 2, borderBottom: '1px solid var(--color-border)' }}>
             <Typography variant="h6">Transaction Type</Typography>
           </Box>
           <List>
             {[
-              { type: 'exchange', icon: <SwapHoriz sx={{ color: 'var(--color-primary)' }} />, primary: 'Currency Exchange', secondary: 'Buy or sell currency' },
-              { type: 'transfer', icon: <Send sx={{ color: 'var(--color-primary)' }} />, primary: 'Outbound Transfer', secondary: 'Send money abroad' },
-              { type: 'remittance', icon: <GetApp sx={{ color: 'var(--color-primary)' }} />, primary: 'Inbound Remittance', secondary: 'Receive money transfer' },
+              { type: 'exchange',   icon: <SwapHoriz sx={{ color: 'var(--color-primary)' }} />, primary: 'Currency Exchange',  secondary: 'Buy or sell currency' },
+              { type: 'transfer',   icon: <Send sx={{ color: 'var(--color-primary)' }} />,      primary: 'Outbound Transfer',  secondary: 'Send money abroad' },
+              { type: 'remittance', icon: <GetApp sx={{ color: 'var(--color-primary)' }} />,    primary: 'Inbound Remittance', secondary: 'Receive money transfer' },
             ].map((item) => (
               <ListItem key={item.type} disablePadding>
-                <ListItemButton
-                  selected={selectedType === item.type}
-                  onClick={() => setSelectedType(item.type)}
+                <ListItemButton selected={selectedType === item.type} onClick={() => setSelectedType(item.type)}
                   sx={{ '&.Mui-selected': { bgcolor: 'var(--color-info-bg)', borderLeft: '4px solid var(--color-primary)' } }}>
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText primary={item.primary} secondary={item.secondary} />
@@ -206,29 +215,78 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
           </List>
         </Paper>
 
+        {/* ── Mobile tab bar ── */}
+        <Box sx={{
+          display: { xs: 'flex', md: 'none' },
+          borderBottom: '1px solid var(--color-border)',
+          bgcolor: 'var(--color-surface)',
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}>
+          {txTypes.map((item) => (
+            <Box key={item.type} onClick={() => setSelectedType(item.type)}
+              sx={{
+                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+                py: 1.5, px: 1, cursor: 'pointer', minWidth: 80,
+                borderBottom: selectedType === item.type ? '3px solid var(--color-primary)' : '3px solid transparent',
+                color: selectedType === item.type ? 'var(--color-primary)' : 'var(--color-text-3)',
+                transition: 'all 0.15s',
+              }}>
+              {item.icon}
+              <Typography variant="caption" sx={{ fontWeight: selectedType === item.type ? 700 : 400, fontSize: '0.65rem', whiteSpace: 'nowrap' }}>
+                {item.label}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+
         {/* Center and Right Content */}
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', p: { xs: 2, md: 3 }, gap: 3 }}>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', p: { xs: 1.5, md: 3 }, gap: { xs: 2, md: 3 } }}>
+
+          {/* ── Mobile rate strip ── */}
+          <Box sx={{
+            display: { xs: 'flex', lg: 'none' },
+            gap: 2, p: 1.5, borderRadius: 1,
+            bgcolor: 'var(--color-info-subtle)',
+            alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Rate</Typography>
+              <Typography sx={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '1rem' }}>
+                1 {fromCurrency} = {getExchangeRate().toFixed(4)} {toCurrency}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="caption" color="text.secondary">Receives</Typography>
+              <Typography sx={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: '1.1rem' }}>
+                {calculateTotal()} {toCurrency}
+              </Typography>
+            </Box>
+          </Box>
+
           <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', flexDirection: { xs: 'column', lg: 'row' } }}>
             {/* Central Form */}
             <Paper sx={{ flex: 1, minWidth: { xs: '100%', md: 400 }, p: { xs: 2, md: 3 } }}>
-              <Typography variant="h6" sx={{ mb: 3 }}>Transaction Details</Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <FormControl fullWidth>
+              <Typography variant="h6" sx={{ mb: 2 }}>Transaction Details</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* Currency row — stacks on xs */}
+                <Box sx={{ display: 'flex', gap: 1.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+                  <FormControl fullWidth size="small">
                     <InputLabel>From Currency</InputLabel>
                     <Select value={fromCurrency} label="From Currency" onChange={(e) => setFromCurrency(e.target.value)}>
-                      {currencies.map((curr) => <MenuItem key={curr.code} value={curr.code}>{curr.flag} {curr.code} - {curr.name}</MenuItem>)}
+                      {currencies.map((curr) => <MenuItem key={curr.code} value={curr.code}>{curr.flag} {curr.code}</MenuItem>)}
                     </Select>
                   </FormControl>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth size="small">
                     <InputLabel>To Currency</InputLabel>
                     <Select value={toCurrency} label="To Currency" onChange={(e) => setToCurrency(e.target.value)}>
-                      {currencies.map((curr) => <MenuItem key={curr.code} value={curr.code}>{curr.flag} {curr.code} - {curr.name}</MenuItem>)}
+                      {currencies.map((curr) => <MenuItem key={curr.code} value={curr.code}>{curr.flag} {curr.code}</MenuItem>)}
                     </Select>
                   </FormControl>
                 </Box>
 
-                <TextField fullWidth label="Amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                <TextField fullWidth label="Amount" type="number" size="small" value={amount} onChange={(e) => setAmount(e.target.value)}
+                  inputMode="decimal"
                   InputProps={{ startAdornment: <InputAdornment position="start">{fromCurrency}</InputAdornment> }} />
 
                 <Divider />
@@ -236,32 +294,33 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Autocomplete fullWidth options={customers} getOptionLabel={(option) => option.name} value={selectedCustomer} onChange={handleCustomerSelect}
                     renderInput={(params) => (
-                      <TextField {...params} label="Customer Name" placeholder="Search customer..."
+                      <TextField {...params} label="Customer Name" size="small" placeholder="Search..."
                         InputProps={{ ...params.InputProps, startAdornment: <><InputAdornment position="start"><Person /></InputAdornment>{params.InputProps.startAdornment}</> }} />
                     )} />
                   <Button variant="outlined" onClick={() => setIsAddCustomerModalOpen(true)}
-                    sx={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', '&:hover': { borderColor: 'var(--color-primary-hover)', bgcolor: 'var(--color-info-subtle)' }, minWidth: 'auto', px: 2 }}>
+                    sx={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', minWidth: 48, px: 1.5 }}>
                     <PersonAdd />
                   </Button>
                 </Box>
 
-                <TextField fullWidth label="ID Number" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
+                <TextField fullWidth size="small" label="ID Number" value={idNumber} onChange={(e) => setIdNumber(e.target.value)} />
 
-                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                {/* Action buttons — stack on mobile */}
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
                   <Button fullWidth variant="contained" size="large" startIcon={<CheckCircle />} onClick={handleConfirmTransaction}
-                    sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' }, py: 1.5 }}>
+                    sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' }, py: 1.5, fontSize: { xs: '0.9rem', md: '1rem' } }}>
                     Confirm Transaction
                   </Button>
-                  <Button variant="outlined" size="large" startIcon={<Print />} onClick={handlePrintReceipt}
-                    sx={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', '&:hover': { borderColor: 'var(--color-primary-hover)', bgcolor: 'var(--color-info-subtle)' }, py: 1.5, minWidth: 180 }}>
+                  <Button fullWidth variant="outlined" size="large" startIcon={<Print />} onClick={handlePrintReceipt}
+                    sx={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)', py: 1.5 }}>
                     Print Receipt
                   </Button>
                 </Box>
               </Box>
             </Paper>
 
-            {/* Right Panel - Exchange Rate */}
-            <Card sx={{ width: { xs: '100%', lg: 320 } }}>
+            {/* Right Panel - Exchange Rate (desktop only) */}
+            <Card sx={{ display: { xs: 'none', lg: 'block' }, width: 300, alignSelf: 'flex-start' }}>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2 }}>Exchange Rate</Typography>
                 <Box sx={{ bgcolor: 'var(--color-info-subtle)', p: 2, borderRadius: 1, mb: 2 }}>
@@ -269,69 +328,77 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
                   <Typography variant="h4" sx={{ color: 'var(--color-primary)', my: 1 }}>{getExchangeRate().toFixed(4)}</Typography>
                   <Typography variant="body2" color="text.secondary">1 {fromCurrency} = {getExchangeRate().toFixed(4)} {toCurrency}</Typography>
                 </Box>
-
                 <Divider sx={{ my: 2 }} />
-
                 <Box sx={{ bgcolor: 'var(--color-accent-subtle)', p: 2, borderRadius: 1 }}>
                   <Typography variant="caption" color="text.secondary">Customer Receives</Typography>
                   <Typography variant="h4" sx={{ color: 'var(--color-accent)', my: 1 }}>{calculateTotal()}</Typography>
                   <Typography variant="body2" color="text.secondary">{toCurrency}</Typography>
                 </Box>
-
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'var(--color-warning-subtle)', borderRadius: 1 }}>
-                  <Typography variant="caption">
-                    {getRates().find(r => r.status === 'Active' && ((r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency) || (r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency)))?.lastUpdated
-                      ? `Rate set: ${getRates().find(r => r.status === 'Active' && ((r.baseCurrency === fromCurrency && r.quoteCurrency === toCurrency) || (r.baseCurrency === toCurrency && r.quoteCurrency === fromCurrency)))?.lastUpdated}`
-                      : 'Using fallback rate — manager should set rates'}
-                  </Typography>
+                <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--color-warning-subtle)', borderRadius: 1 }}>
+                  <Typography variant="caption">{rateInfo ? `Rate set: ${rateInfo.lastUpdated}` : 'Using fallback rate — manager should set rates'}</Typography>
                 </Box>
               </CardContent>
             </Card>
           </Box>
 
-          {/* Recent Transactions Table */}
-          <Paper sx={{ p: { xs: 2, md: 3 } }}>
+          {/* Recent Transactions */}
+          <Paper sx={{ p: { xs: 1.5, md: 3 } }}>
             <Typography variant="h6" sx={{ mb: 2 }}>Recent Transactions</Typography>
             {recentTxns.length === 0 ? (
               <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>No transactions yet — complete one above to see it here.</Typography>
             ) : (
-              <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table sx={{ minWidth: 650 }}>
-                  <TableHead>
-                    <TableRow sx={{ bgcolor: 'var(--color-bg-subtle)' }}>
-                      <TableCell>Transaction ID</TableCell>
-                      <TableCell>Time</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>From</TableCell>
-                      <TableCell>To</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                      <TableCell>Customer</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentTxns.map((txn) => (
-                      <TableRow key={txn.id} hover>
-                        <TableCell sx={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>{txn.id}</TableCell>
-                        <TableCell>{txn.time}</TableCell>
-                        <TableCell>{txn.type}</TableCell>
-                        <TableCell>{txn.fromCurrency}</TableCell>
-                        <TableCell>{txn.toCurrency}</TableCell>
-                        <TableCell align="right">{txn.amountGiven.toLocaleString()}</TableCell>
-                        <TableCell>{txn.customerName}</TableCell>
-                        <TableCell>
-                          <Box component="span" sx={{ px: 2, py: 0.5, borderRadius: 1,
-                            bgcolor: txn.status === 'Flagged' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
-                            color: txn.status === 'Flagged' ? 'var(--color-danger)' : 'var(--color-accent)',
-                            fontSize: 'var(--text-base)' }}>
-                            {txn.status}
-                          </Box>
-                        </TableCell>
+              <>
+                {/* Mobile cards */}
+                <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1 }}>
+                  {recentTxns.map((txn) => (
+                    <Box key={txn.id} sx={{ p: 1.5, borderRadius: 1, border: '1px solid var(--color-border)', bgcolor: 'var(--color-surface)' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography sx={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.8rem' }}>{txn.id}</Typography>
+                        <Box component="span" sx={{ px: 1.5, py: 0.25, borderRadius: 1, fontSize: '0.7rem', fontWeight: 700,
+                          bgcolor: txn.status === 'Flagged' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
+                          color: txn.status === 'Flagged' ? 'var(--color-danger)' : 'var(--color-accent)' }}>
+                          {txn.status}
+                        </Box>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">{txn.customerName}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{txn.amountGiven.toLocaleString()} {txn.fromCurrency} → {txn.toCurrency}</Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">{txn.type} · {txn.time}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+                {/* Desktop table */}
+                <TableContainer sx={{ display: { xs: 'none', md: 'block' }, overflowX: 'auto' }}>
+                  <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: 'var(--color-bg-subtle)' }}>
+                        <TableCell>Transaction ID</TableCell><TableCell>Time</TableCell><TableCell>Type</TableCell>
+                        <TableCell>From</TableCell><TableCell>To</TableCell><TableCell align="right">Amount</TableCell>
+                        <TableCell>Customer</TableCell><TableCell>Status</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {recentTxns.map((txn) => (
+                        <TableRow key={txn.id} hover>
+                          <TableCell sx={{ color: 'var(--color-primary)', fontWeight: 'var(--weight-semibold)' }}>{txn.id}</TableCell>
+                          <TableCell>{txn.time}</TableCell><TableCell>{txn.type}</TableCell>
+                          <TableCell>{txn.fromCurrency}</TableCell><TableCell>{txn.toCurrency}</TableCell>
+                          <TableCell align="right">{txn.amountGiven.toLocaleString()}</TableCell>
+                          <TableCell>{txn.customerName}</TableCell>
+                          <TableCell>
+                            <Box component="span" sx={{ px: 2, py: 0.5, borderRadius: 1,
+                              bgcolor: txn.status === 'Flagged' ? 'var(--color-danger-bg)' : 'var(--color-success-bg)',
+                              color: txn.status === 'Flagged' ? 'var(--color-danger)' : 'var(--color-accent)', fontSize: 'var(--text-base)' }}>
+                              {txn.status}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
             )}
           </Paper>
         </Box>

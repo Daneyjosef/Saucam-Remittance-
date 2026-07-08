@@ -84,14 +84,14 @@ export default function AppShell({
 
         {/* User info */}
         {userLabel && (
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
               style={{ background: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)' }}
             >
               {initials}
             </div>
-            <div className="text-right">
+            <div className="text-right hidden sm:block">
               <span className="block text-white font-semibold leading-tight" style={{ fontSize: 'var(--text-base)' }}>{userLabel}</span>
               {userRole && <span className="block text-white/60 text-[10px]">{userRole}</span>}
             </div>

@@ -135,7 +135,7 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, 
           </Paper>
 
           {/* Summary Stats */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1.5, mb: 3 }}>
             <Paper sx={{ p: 2.5, borderLeft: '4px solid var(--color-warning)' }}>
               <Typography variant="caption" color="text.secondary">Pending Review</Typography>
               <Typography variant="h4" sx={{ color: 'var(--color-warning)', mt: 0.5 }}>{transactions.filter((t) => t.status === 'Pending').length}</Typography>
@@ -154,24 +154,60 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, 
             </Paper>
           </Box>
 
-          {/* Transactions Table */}
+          {/* Transactions — cards on mobile, table on desktop */}
           <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-            <TableContainer sx={{ overflowX: 'auto' }}>
+
+            {/* Mobile cards */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 0 }}>
+              {filteredTransactions.length === 0 && (
+                <Typography variant="body2" color="text.secondary" sx={{ p: 3, textAlign: 'center' }}>No flagged transactions</Typography>
+              )}
+              {filteredTransactions.map((txn, i) => (
+                <Box key={txn.id} sx={{ p: 2, borderBottom: '1px solid var(--color-border)', bgcolor: i % 2 === 0 ? 'var(--color-surface)' : 'var(--color-bg-subtle)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography sx={{ fontWeight: 700, color: 'var(--color-primary)', fontSize: '0.85rem' }}>{txn.id}</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Chip label={txn.riskLevel} size="small" sx={{ ...getRiskColor(txn.riskLevel), fontWeight: 700, fontSize: '0.65rem', height: 20 }} />
+                      <Chip label={txn.status} size="small" sx={{ ...getStatusColor(txn.status), fontWeight: 700, fontSize: '0.65rem', height: 20 }} />
+                    </Box>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{txn.customerName}</Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                    {txn.amount.toLocaleString()} {txn.currency} · {txn.teller} · {txn.branch}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'var(--color-danger)', display: 'block', mb: txn.status === 'Pending' ? 1 : 0 }}>
+                    {txn.flagReason}
+                  </Typography>
+                  {txn.status === 'Pending' && (
+                    <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                      <Button size="small" variant="contained" startIcon={<CheckCircle />} onClick={() => handleApprove(txn.id)}
+                        sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' }, flex: 1 }}>
+                        Approve
+                      </Button>
+                      <Button size="small" variant="outlined" startIcon={<Search />} onClick={() => handleInvestigate(txn.id)}
+                        sx={{ borderColor: 'var(--color-warning)', color: 'var(--color-warning)', flex: 1 }}>
+                        Investigate
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
+
+            {/* Desktop table */}
+            <TableContainer sx={{ display: { xs: 'none', md: 'block' }, overflowX: 'auto' }}>
               <Table sx={{ minWidth: 1000 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'var(--color-primary)' }}>
                     {['Transaction ID', 'Timestamp', 'Branch', 'Teller', 'Customer Name', 'Amount', 'Currency', 'Flag Reason', 'Risk', 'Status', 'Actions'].map((h, i) => (
                       <TableCell key={h} align={i === 5 ? 'right' : i === 10 ? 'center' : 'left'}
-                        sx={{ color: 'var(--color-text-inverse)', fontWeight: 'var(--weight-semibold)' }}>
-                        {h}
-                      </TableCell>
+                        sx={{ color: 'var(--color-text-inverse)', fontWeight: 'var(--weight-semibold)' }}>{h}</TableCell>
                     ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filteredTransactions.map((txn, index) => (
-                    <TableRow key={txn.id} hover
-                      sx={{ bgcolor: index % 2 === 0 ? 'var(--color-surface)' : 'var(--color-bg-subtle)', '&:hover': { bgcolor: 'var(--color-info-subtle) !important' } }}>
+                    <TableRow key={txn.id} hover sx={{ bgcolor: index % 2 === 0 ? 'var(--color-surface)' : 'var(--color-bg-subtle)', '&:hover': { bgcolor: 'var(--color-info-subtle) !important' } }}>
                       <TableCell><Typography variant="body2" sx={{ fontWeight: 'var(--weight-semibold)', color: 'var(--color-primary)' }}>{txn.id}</Typography></TableCell>
                       <TableCell><Typography variant="body2" color="text.secondary">{txn.timestamp}</Typography></TableCell>
                       <TableCell><Typography variant="body2">{txn.branch}</Typography></TableCell>
@@ -183,19 +219,14 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, 
                       <TableCell><Chip label={txn.riskLevel} size="small" sx={{ ...getRiskColor(txn.riskLevel), fontWeight: 'var(--weight-semibold)' }} /></TableCell>
                       <TableCell><Chip label={txn.status} size="small" sx={{ ...getStatusColor(txn.status), fontWeight: 'var(--weight-semibold)', minWidth: 100 }} /></TableCell>
                       <TableCell align="center">
-                        {txn.status === 'Pending' && (
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {txn.status === 'Pending' ? (
+                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
                             <Button size="small" variant="contained" startIcon={<CheckCircle />} onClick={() => handleApprove(txn.id)}
-                              sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' } }}>
-                              Approve
-                            </Button>
+                              sx={{ bgcolor: 'var(--color-accent)', '&:hover': { bgcolor: 'var(--color-accent-hover)' } }}>Approve</Button>
                             <Button size="small" variant="outlined" startIcon={<Search />} onClick={() => handleInvestigate(txn.id)}
-                              sx={{ borderColor: 'var(--color-warning)', color: 'var(--color-warning)', '&:hover': { borderColor: 'var(--color-warning-dark)', bgcolor: 'var(--color-warning-subtle)' } }}>
-                              Investigate
-                            </Button>
+                              sx={{ borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}>Investigate</Button>
                           </Box>
-                        )}
-                        {txn.status !== 'Pending' && (
+                        ) : (
                           <Typography variant="caption" color="text.secondary">{txn.status === 'Approved' ? 'Cleared' : 'In Review'}</Typography>
                         )}
                       </TableCell>
