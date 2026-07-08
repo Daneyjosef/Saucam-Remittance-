@@ -70,21 +70,22 @@ export default function ExecutiveDashboard({ onBack, onGoToCompliance, onLogout,
           </motion.div>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
             <AppStatCard label="Total Transactions Today" value={267} sub="+12.5% from yesterday" color="primary" icon={<Assessment />} delay={0} />
             <AppStatCard label="Total Volume (NGN)" value="₦2.34M" sub="+8.3% from yesterday" color="accent" icon={<AccountBalance />} delay={0.08} />
             <AppStatCard label="Average Spread Earned" value="1.24%" sub="Across all currency pairs" color="warning" icon={<TrendingUp />} delay={0.16} />
+            <AppStatCard label="Flagged Transactions" value={flaggedTransactions.length} sub={`${flaggedTransactions.filter(f => f.risk === 'High').length} high risk`} color="danger" icon={<Flag />} delay={0.24} />
           </div>
 
           {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
             <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 md:p-5">
               <div className="font-bold mb-4" style={{ color: 'var(--color-primary)' }}>Revenue by Branch (Today)</div>
-              <ResponsiveContainer width="100%" height={180} className="md:!h-[300px]">
+              <ResponsiveContainer width="100%" height={180} className="md:!h-[260px]">
                 <BarChart data={branchRevenueData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis dataKey="branch" tick={{ fill: '#64748b', fontSize: 12 }} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `₦${(v/1000000).toFixed(1)}M`} />
+                  <XAxis dataKey="branch" tick={{ fill: '#64748b', fontSize: 11 }} angle={-15} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => `₦${(v/1000000).toFixed(1)}M`} />
                   <Tooltip formatter={(v: number) => [`₦${v.toLocaleString()}`, 'Revenue']} contentStyle={{ borderRadius: 8 }} />
                   <Bar dataKey="revenue" fill="var(--color-primary)" radius={[8, 8, 0, 0]} />
                 </BarChart>
@@ -92,16 +93,29 @@ export default function ExecutiveDashboard({ onBack, onGoToCompliance, onLogout,
             </div>
             <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 md:p-5">
               <div className="font-bold mb-4" style={{ color: 'var(--color-primary)' }}>Transaction Volume (Last 7 Days)</div>
-              <ResponsiveContainer width="100%" height={180} className="md:!h-[300px]">
+              <ResponsiveContainer width="100%" height={180} className="md:!h-[260px]">
                 <LineChart data={transactionVolumeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(v) => `₦${(v/1000000).toFixed(1)}M`} />
+                  <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 11 }} />
+                  <YAxis tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => `₦${(v/1000000).toFixed(1)}M`} />
                   <Tooltip formatter={(v: number, n: string) => n === 'volume' ? [`₦${v.toLocaleString()}`, 'Volume'] : [v, 'Transactions']} contentStyle={{ borderRadius: 8 }} />
                   <Legend />
                   <Line type="monotone" dataKey="volume" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 5 }} />
                   <Line type="monotone" dataKey="transactions" stroke="var(--color-accent)" strokeWidth={2} dot={{ r: 4 }} />
                 </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {/* 3rd chart: Branch comparison — visible only on XL */}
+            <div className="hidden xl:block bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 md:p-5">
+              <div className="font-bold mb-4" style={{ color: 'var(--color-primary)' }}>Branch Comparison (Transactions)</div>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={branchRevenueData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                  <XAxis type="number" tick={{ fill: '#64748b', fontSize: 11 }} tickFormatter={(v) => `₦${(v/1000000).toFixed(1)}M`} />
+                  <YAxis type="category" dataKey="branch" tick={{ fill: '#64748b', fontSize: 11 }} width={110} />
+                  <Tooltip formatter={(v: number) => [`₦${v.toLocaleString()}`, 'Revenue']} contentStyle={{ borderRadius: 8 }} />
+                  <Bar dataKey="revenue" fill="var(--color-accent)" radius={[0, 6, 6, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>

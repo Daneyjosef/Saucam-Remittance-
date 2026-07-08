@@ -319,26 +319,67 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
               </Box>
             </Paper>
 
-            {/* Right Panel - Exchange Rate (desktop only) */}
-            <Card sx={{ display: { xs: 'none', lg: 'block' }, width: 300, alignSelf: 'flex-start' }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>Exchange Rate</Typography>
-                <Box sx={{ bgcolor: 'var(--color-info-subtle)', p: 2, borderRadius: 1, mb: 2 }}>
-                  <Typography variant="caption" color="text.secondary">Current Rate</Typography>
-                  <Typography variant="h4" sx={{ color: 'var(--color-primary)', my: 1 }}>{getExchangeRate().toFixed(4)}</Typography>
-                  <Typography variant="body2" color="text.secondary">1 {fromCurrency} = {getExchangeRate().toFixed(4)} {toCurrency}</Typography>
-                </Box>
-                <Divider sx={{ my: 2 }} />
-                <Box sx={{ bgcolor: 'var(--color-accent-subtle)', p: 2, borderRadius: 1 }}>
-                  <Typography variant="caption" color="text.secondary">Customer Receives</Typography>
-                  <Typography variant="h4" sx={{ color: 'var(--color-accent)', my: 1 }}>{calculateTotal()}</Typography>
-                  <Typography variant="body2" color="text.secondary">{toCurrency}</Typography>
-                </Box>
-                <Box sx={{ mt: 2, p: 1.5, bgcolor: 'var(--color-warning-subtle)', borderRadius: 1 }}>
-                  <Typography variant="caption">{rateInfo ? `Rate set: ${rateInfo.lastUpdated}` : 'Using fallback rate — manager should set rates'}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
+            {/* Right Panel - Exchange Rate + Today's Stats (desktop only) */}
+            <Box sx={{ display: { xs: 'none', lg: 'flex' }, flexDirection: 'column', gap: 2, width: 320, flexShrink: 0 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Exchange Rate</Typography>
+                  <Box sx={{ bgcolor: 'var(--color-info-subtle)', p: 2, borderRadius: 1, mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary">Current Rate</Typography>
+                    <Typography variant="h4" sx={{ color: 'var(--color-primary)', my: 0.5, fontSize: '1.6rem' }}>{getExchangeRate().toFixed(4)}</Typography>
+                    <Typography variant="body2" color="text.secondary">1 {fromCurrency} = {getExchangeRate().toFixed(4)} {toCurrency}</Typography>
+                  </Box>
+                  <Box sx={{ bgcolor: 'var(--color-accent-subtle)', p: 2, borderRadius: 1, mb: 2 }}>
+                    <Typography variant="caption" color="text.secondary">Customer Receives</Typography>
+                    <Typography variant="h4" sx={{ color: 'var(--color-accent)', my: 0.5, fontSize: '1.6rem' }}>{calculateTotal()}</Typography>
+                    <Typography variant="body2" color="text.secondary">{toCurrency}</Typography>
+                  </Box>
+                  <Box sx={{ p: 1.5, bgcolor: 'var(--color-warning-subtle)', borderRadius: 1 }}>
+                    <Typography variant="caption">{rateInfo ? `Rate set: ${rateInfo.lastUpdated}` : 'Using fallback rate — manager should set rates'}</Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+              {/* Today's Stats */}
+              <Card>
+                <CardContent sx={{ pb: '12px !important' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: 'var(--color-text-1)' }}>Today's Activity</Typography>
+                  {(() => {
+                    const todayStr = new Date().toISOString().slice(0, 10);
+                    const todayTxns = getTransactions().filter(t => t.date === todayStr);
+                    const totalVol = todayTxns.reduce((s, t) => s + t.amountGiven, 0);
+                    const flagged = todayTxns.filter(t => t.status === 'Flagged' || t.status === 'Pending').length;
+                    return (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {[
+                          { label: 'Transactions', value: todayTxns.length, color: 'var(--color-primary)' },
+                          { label: 'Total Volume', value: totalVol > 0 ? `${(totalVol / 1000).toFixed(1)}K` : '0', color: 'var(--color-accent)' },
+                          { label: 'Flagged', value: flagged, color: flagged > 0 ? 'var(--color-danger)' : 'var(--color-text-3)' },
+                        ].map(s => (
+                          <Box key={s.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1.5, borderRadius: 1, bgcolor: 'var(--color-bg-subtle)' }}>
+                            <Typography variant="body2" color="text.secondary">{s.label}</Typography>
+                            <Typography variant="body1" sx={{ fontWeight: 700, color: s.color }}>{s.value}</Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+              {/* Active Rates quick view */}
+              <Card>
+                <CardContent sx={{ pb: '12px !important' }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700, color: 'var(--color-text-1)' }}>Active Rates</Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {getRates().filter(r => r.status === 'Active').slice(0, 5).map(r => (
+                      <Box key={r.id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.75, borderBottom: '1px solid var(--color-border)', '&:last-child': { borderBottom: 'none' } }}>
+                        <Typography variant="caption" sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-primary)' }}>{r.currencyPair}</Typography>
+                        <Typography variant="caption" color="text.secondary">{r.sellRate.toFixed(r.sellRate >= 100 ? 2 : 4)}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
           </Box>
 
           {/* Recent Transactions */}

@@ -97,8 +97,43 @@ export default function FlaggedTransactionsScreen({ onBack, onLogout, userName, 
   return (
     <AppShell title="Compliance Review" subtitle="Flagged transactions pending review" icon={<Flag sx={{ fontSize: 18 }} />} userLabel={userName || 'Mary Okafor'} userRole={userRoleLabel || 'Compliance Officer'} onBack={onBack} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
-      <Box sx={{ p: { xs: 2, md: 4 } }}>
-        <Box sx={{ maxWidth: 'var(--container-max)', mx: 'auto' }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, display: { xs: 'block', xl: 'flex' }, gap: 3, alignItems: 'flex-start' }}>
+        {/* Desktop left stats sidebar */}
+        <Box sx={{ display: { xs: 'none', xl: 'flex' }, flexDirection: 'column', gap: 2, width: 260, flexShrink: 0, position: 'sticky', top: 24 }}>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700, color: 'var(--color-text-1)' }}>Summary</Typography>
+            {[
+              { label: 'Pending Review', value: transactions.filter(t => t.status === 'Pending').length, color: 'var(--color-warning)' },
+              { label: 'Under Investigation', value: transactions.filter(t => t.status === 'Under Investigation').length, color: 'var(--color-danger)' },
+              { label: 'Approved Today', value: transactions.filter(t => t.status === 'Approved').length, color: 'var(--color-accent)' },
+              { label: 'Total Flagged', value: transactions.length, color: 'var(--color-primary)' },
+            ].map(s => (
+              <Box key={s.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.25, borderBottom: '1px solid var(--color-border)', '&:last-child': { borderBottom: 'none' } }}>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>{s.label}</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 800, color: s.color, fontSize: '1.2rem', lineHeight: 1 }}>{s.value}</Typography>
+              </Box>
+            ))}
+          </Paper>
+          <Paper sx={{ p: 2.5 }}>
+            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700, color: 'var(--color-text-1)' }}>Risk Breakdown</Typography>
+            {[
+              { label: 'High Risk', value: transactions.filter(t => t.riskLevel === 'High').length, color: 'var(--color-danger)' },
+              { label: 'Medium Risk', value: transactions.filter(t => t.riskLevel === 'Medium').length, color: 'var(--color-warning)' },
+              { label: 'Low Risk', value: transactions.filter(t => t.riskLevel === 'Low').length, color: 'var(--color-info)' },
+            ].map(s => (
+              <Box key={s.label} sx={{ mb: 1.5 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary">{s.label}</Typography>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: s.color }}>{s.value}</Typography>
+                </Box>
+                <Box sx={{ height: 6, borderRadius: 3, bgcolor: 'var(--color-border)', overflow: 'hidden' }}>
+                  <Box sx={{ height: '100%', borderRadius: 3, bgcolor: s.color, width: `${transactions.length ? (s.value / transactions.length) * 100 : 0}%`, transition: 'width 0.6s ease' }} />
+                </Box>
+              </Box>
+            ))}
+          </Paper>
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0, mx: { xs: 'auto', xl: 0 }, width: '100%' }}>
           {/* Header */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="h4" sx={{ mb: 1, color: 'var(--color-primary)', fontSize: { xs: 'var(--text-3xl)', md: 'var(--text-5xl)' } }}>
