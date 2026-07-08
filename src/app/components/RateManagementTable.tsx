@@ -114,7 +114,35 @@ export default function RateManagementTable({ onBack, onLogout, userName, userRo
           </Box>
 
           <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-            <TableContainer sx={{ overflowX: 'auto' }}>
+            {/* Mobile cards */}
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              {rates.map((rate) => {
+                const dec = rate.buyRate >= 100 ? 2 : 4;
+                return (
+                  <Box key={rate.id} sx={{ p: 1.5, borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: rate.status === 'Active' ? 'var(--color-accent)' : 'var(--color-text-4)', flexShrink: 0 }} />
+                        <Typography variant="body2" sx={{ fontWeight: 'var(--weight-bold)', color: 'var(--color-primary)', fontFamily: 'monospace' }}>{rate.currencyPair}</Typography>
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">Buy: {rate.buyRate.toFixed(dec)} · Sell: {rate.sellRate.toFixed(dec)} · Mid: {rate.midMarketRate.toFixed(dec)}</Typography>
+                      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                        <Chip label={`${rate.spread.toFixed(2)}%`} size="small"
+                          sx={{ bgcolor: rate.spread > 1 ? 'var(--color-warning-bg)' : 'var(--color-success-bg)', color: rate.spread > 1 ? '#92400e' : '#166534', fontWeight: 'var(--weight-semibold)', height: 20, fontSize: 11 }} />
+                        <Chip label={rate.status} size="small"
+                          sx={{ bgcolor: rate.status === 'Active' ? 'var(--color-success-bg)' : 'var(--color-surface-muted)', color: rate.status === 'Active' ? 'var(--color-accent)' : 'var(--color-text-3)', fontWeight: 'var(--weight-semibold)', height: 20, fontSize: 11 }} />
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                      <IconButton size="small" onClick={() => openEdit(rate)} sx={{ color: 'var(--color-primary)' }}><Edit fontSize="small" /></IconButton>
+                      <IconButton size="small" onClick={() => handleDelete(rate)} sx={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+            {/* Desktop table */}
+            <TableContainer sx={{ display: { xs: 'none', md: 'block' }, overflowX: 'auto' }}>
               <Table sx={{ minWidth: 900 }}>
                 <TableHead>
                   <TableRow sx={{ bgcolor: 'var(--color-primary)' }}>

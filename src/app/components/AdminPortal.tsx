@@ -502,7 +502,31 @@ function UsersSection({ users, setUsers, resetRequests, setResetRequests, countr
         <AppStatCard label="Tellers"         value={users.filter((u) => u.role === 'Teller').length}           color="primary" delay={0.18} />
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer sx={{ overflowX: 'auto' }}>
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-[var(--color-border)]">
+          {users.map((u, i) => (
+            <div key={u.id} className="flex items-center gap-3 p-3">
+              <Avatar style={{ width: 38, height: 38, fontSize: 13, fontWeight: 700, background: avatarColors[i % avatarColors.length], flexShrink: 0 }}>{getInitials(u.name)}</Avatar>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-[var(--color-text-1)] truncate">{u.name}</div>
+                <div className="font-mono text-xs text-[var(--color-text-3)]">{u.username}</div>
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  <AppBadge variant={u.role === 'Teller' ? 'success' : u.role === 'Branch Manager' ? 'warning' : 'admin'} size="sm">{u.role}</AppBadge>
+                  <AppBadge variant={u.status === 'Active' ? 'success' : 'danger'} dot size="sm">{u.status}</AppBadge>
+                </div>
+              </div>
+              <div className="flex gap-0.5 flex-shrink-0">
+                <IconButton size="small" onClick={() => openEdit(u)} style={{ color: '#4f46e5' }}><Edit fontSize="small" /></IconButton>
+                <IconButton size="small" onClick={() => { const next = users.map((x) => x.id === u.id ? { ...x, status: x.status === 'Active' ? 'Disabled' as const : 'Active' as const } : x); setUsers(next); persistUsers(next); toast.info(`${u.name} ${u.status === 'Active' ? 'disabled' : 'activated'}`); }} style={{ color: u.status === 'Active' ? 'var(--color-danger)' : 'var(--color-accent)' }}>
+                  {u.status === 'Active' ? <Block fontSize="small" /> : <CheckCircle fontSize="small" />}
+                </IconButton>
+                <IconButton size="small" onClick={() => setDeleteConfirm(u)} style={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Desktop table */}
+        <TableContainer className="hidden md:block" sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 780 }}>
             <TableHead>
               <TableRow>
@@ -1058,7 +1082,33 @@ function RatesSection({ rates, setRates }: { rates: ExchangeRate[]; setRates: Re
         <AppStatCard label="Avg Spread" value={`${(rates.reduce((s, r) => s + r.spread, 0) / rates.length).toFixed(2)}%`} color="warning" delay={0.12} />
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer sx={{ overflowX: 'auto' }}>
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-[var(--color-border)]">
+          {rates.map((r) => {
+            const dec = r.buyRate >= 100 ? 2 : 4;
+            return (
+              <div key={r.id} className="flex items-center gap-3 p-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.status === 'Active' ? 'var(--color-accent)' : 'var(--color-text-4)' }} />
+                    <span className="font-bold font-mono text-sm" style={{ color: '#312e81' }}>{r.currencyPair}</span>
+                  </div>
+                  <div className="text-xs text-[var(--color-text-3)]">Buy: {r.buyRate.toFixed(dec)} · Sell: {r.sellRate.toFixed(dec)}</div>
+                  <div className="flex gap-1 mt-1">
+                    <AppBadge variant={r.spread > 1 ? 'warning' : 'success'} size="sm">{r.spread.toFixed(2)}%</AppBadge>
+                    <AppBadge variant={r.status === 'Active' ? 'success' : 'neutral'} dot size="sm">{r.status}</AppBadge>
+                  </div>
+                </div>
+                <div className="flex gap-0.5 flex-shrink-0">
+                  <IconButton size="small" onClick={() => toast.info(`Edit ${r.currencyPair}`)} style={{ color: '#4f46e5' }}><Edit fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => { setRates(rates.filter((x) => x.id !== r.id)); toast.info('Rate removed'); }} style={{ color: 'var(--color-danger)' }}><Delete fontSize="small" /></IconButton>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Desktop table */}
+        <TableContainer className="hidden md:block" sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 700 }}>
             <TableHead>
               <TableRow>
@@ -1223,7 +1273,39 @@ function ComplianceSection({ transactions, setTransactions }: { transactions: Fl
         <AppButton variant="accent" size="sm" leftIcon={<FileDownload style={{ fontSize: 16 }} />} onClick={() => toast.success('Generating compliance report...')}>Export Report</AppButton>
       </div>
       <div className="bg-white rounded-[var(--radius-lg)] border border-[var(--color-border)] overflow-hidden">
-        <TableContainer sx={{ overflowX: 'auto' }}>
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-[var(--color-border)]">
+          {filtered.map((t) => (
+            <div key={t.id} className="p-3 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold font-mono text-xs text-[var(--color-admin)]">{t.id}</span>
+                <div className="flex gap-1">
+                  <AppBadge variant={t.riskLevel === 'High' ? 'danger' : t.riskLevel === 'Medium' ? 'warning' : 'info'} size="sm">{t.riskLevel}</AppBadge>
+                  <AppBadge variant={t.status === 'Pending' ? 'warning' : t.status === 'Approved' ? 'success' : 'danger'} dot size="sm">{t.status}</AppBadge>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-sm text-[var(--color-text-1)]">{t.customerName}</div>
+                  <div className="text-xs text-[var(--color-text-3)]">{t.teller} · {t.branch}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-sm">{t.amount.toLocaleString()} <span className="font-mono text-xs">{t.currency}</span></div>
+                  <div className="text-xs text-[var(--color-text-3)]">{t.timestamp}</div>
+                </div>
+              </div>
+              <div className="text-xs text-[var(--color-text-3)] italic">{t.flagReason}</div>
+              {t.status === 'Pending' && (
+                <div className="flex gap-2">
+                  <AppButton variant="accent" size="sm" onClick={() => { setTransactions(transactions.map((x) => x.id === t.id ? { ...x, status: 'Approved' } : x)); toast.success(`${t.id} approved`); }}>Approve</AppButton>
+                  <AppButton variant="secondary" size="sm" onClick={() => { setTransactions(transactions.map((x) => x.id === t.id ? { ...x, status: 'Under Investigation' } : x)); toast.info(`${t.id} under investigation`); }}>Investigate</AppButton>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {/* Desktop table */}
+        <TableContainer className="hidden md:block" sx={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 1000 }}>
             <TableHead>
               <TableRow>
