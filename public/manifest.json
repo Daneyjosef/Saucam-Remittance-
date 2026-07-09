@@ -1,6 +1,6 @@
 {
-  "name": "Saucam Pro",
-  "short_name": "Saucam Pro",
+  "name": "Saucam Rem",
+  "short_name": "Saucam Rem",
   "description": "Remittance operations platform for tellers, managers, and compliance officers.",
   "start_url": "/",
   "display": "standalone",

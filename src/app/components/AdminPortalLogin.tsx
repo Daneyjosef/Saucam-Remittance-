@@ -82,7 +82,7 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
                   className="inline-flex items-center justify-center w-[88px] h-[88px] rounded-2xl mb-5"
                   style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(10px)', boxShadow: 'var(--shadow-lg)', padding: 10 }}
                 >
-                  <img src="/logo.png" alt="Saucam Pro" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <img src="/logo.png" alt="Saucam Rem" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               </motion.div>
               <h1
@@ -188,7 +188,7 @@ export default function AdminPortalLogin({ onAdminLogin, onBack }: AdminPortalLo
               </form>
 
               <p className="m-0 mt-6 text-center text-sm" style={{ color: 'var(--color-text-4)' }}>
-                © {new Date().getFullYear()} Saucam Pro · Restricted Access
+                © {new Date().getFullYear()} Saucam Rem · Restricted Access
               </p>
             </div>
           </div>

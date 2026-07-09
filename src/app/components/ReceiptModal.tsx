@@ -233,7 +233,7 @@ export default function ReceiptModal({ open, onClose, receiptData }: ReceiptModa
             {/* Footer */}
             <Box sx={{ textAlign: 'center', pt: 2, borderTop: '2px solid #e5e7eb' }}>
               <Typography variant="body2" sx={{ fontWeight: 600, color: '#1e3a8a', mb: 1 }}>
-                Saucam Pro Financial Services Limited
+                Saucam Rem Financial Services Limited
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                 RC: 1234567 • Licensed by Central Bank of Nigeria

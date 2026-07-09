@@ -160,7 +160,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
                 <Shield style={{ color: 'white', fontSize: 20 }} />
               </div>
               <div>
-                <div className="text-white font-extrabold text-base leading-none">Saucam Pro</div>
+                <div className="text-white font-extrabold text-base leading-none">Saucam Rem</div>
                 <div className="text-white/55 text-[10px] uppercase tracking-widest mt-0.5">Admin Portal</div>
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function AdminPortal({ onLogout }: AdminPortalProps) {
           </div>
           {!collapsed && (
             <div>
-              <div className="text-white font-extrabold text-base leading-none">Saucam Pro</div>
+              <div className="text-white font-extrabold text-base leading-none">Saucam Rem</div>
               <div className="text-white/55 text-[10px] uppercase tracking-widest mt-0.5">Admin Portal</div>
             </div>
           )}
@@ -1348,7 +1348,7 @@ function ComplianceSection({ transactions, setTransactions }: { transactions: Fl
 // ─── Settings ───────────────────────────────────────────────────────────────────
 
 function SettingsSection() {
-  const [settings, setSettings] = useState({ companyName: 'Saucam Pro', cbnThreshold: '10000', sessionTimeout: '30', maintenanceMode: false, twoFactor: true, auditLogs: true });
+  const [settings, setSettings] = useState({ companyName: 'Saucam Rem', cbnThreshold: '10000', sessionTimeout: '30', maintenanceMode: false, twoFactor: true, auditLogs: true });
   return (
     <div>
       <div className="mb-6">

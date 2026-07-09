@@ -184,7 +184,7 @@ export default function TransactionScreen({ onLogout, userName, userRoleLabel }:
   ));
 
   return (
-    <AppShell title="Saucam Pro" subtitle="Downtown Main Office" userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Teller'} onLogout={onLogout}>
+    <AppShell title="Saucam Rem" subtitle="Downtown Main Office" userLabel={userName || 'Staff'} userRole={userRoleLabel || 'Teller'} onLogout={onLogout}>
       <Toaster position="top-right" richColors />
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden', flexDirection: { xs: 'column', md: 'row' } }}>
 
